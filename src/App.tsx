@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import landscape from './assets/showcase/kurdistan-landscape.webp';
 import homeAr from './assets/screens/home-ar.webp';
@@ -92,16 +92,39 @@ function Device({ screen, className, label, eager = false }: { screen: string; c
 
 export default function App() {
   const [lang, setLang] = useState<Lang>(() => detectLang());
+  const [activeMobileScreen, setActiveMobileScreen] = useState(0);
+  const mobileTrackRef = useRef<HTMLDivElement>(null);
   const t = T[lang];
   const meta = LANGS[lang];
   const screens = SCREENS[lang];
+  const mobileScreens = [
+    { key: 'home', screen: screens.home, label: `hemû marketplace home screen — ${meta.name}` },
+    { key: 'onboarding', screen: screens.onboarding, label: `hemû onboarding screen — ${meta.name}` },
+    { key: 'account', screen: screens.account, label: `hemû account screen — ${meta.name}` },
+  ];
 
   useEffect(() => {
     document.documentElement.lang = meta.tag;
     document.documentElement.dir = meta.dir;
     document.title = `hemû — ${t.headline}`;
     localStorage.setItem('hemu-lang', lang);
+    setActiveMobileScreen(0);
+    mobileTrackRef.current?.scrollTo({ left: 0 });
   }, [lang, meta, t]);
+
+  const showMobileScreen = (index: number) => {
+    const track = mobileTrackRef.current;
+    if (!track) return;
+    setActiveMobileScreen(index);
+    track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
+  };
+
+  const updateMobileScreen = () => {
+    const track = mobileTrackRef.current;
+    if (!track || !track.clientWidth) return;
+    const index = Math.max(0, Math.min(mobileScreens.length - 1, Math.round(track.scrollLeft / track.clientWidth)));
+    setActiveMobileScreen(index);
+  };
 
   return (
     <div className="page">
@@ -134,11 +157,13 @@ export default function App() {
               <div className="launch-pill"><span />{t.comingSoon}</div>
               <h1>{t.headline}</h1>
               <p className="hero-subtitle">{t.subheadline}</p>
-              <div className="store-buttons">
-                <StoreButton store="App Store" icon={<AppleIcon />} comingSoon={t.comingSoon} />
-                <StoreButton store="Google Play" icon={<PlayIcon />} comingSoon={t.comingSoon} />
+              <div className="desktop-downloads">
+                <div className="store-buttons">
+                  <StoreButton store="App Store" icon={<AppleIcon />} comingSoon={t.comingSoon} />
+                  <StoreButton store="Google Play" icon={<PlayIcon />} comingSoon={t.comingSoon} />
+                </div>
+                <p className="availability">{t.downloadHint}</p>
               </div>
-              <p className="availability">{t.downloadHint}</p>
             </div>
 
             <div className="product-stage" aria-label="hemû app preview">
@@ -149,6 +174,36 @@ export default function App() {
               <div className="floating-card">
                 <span className="floating-icon"><ArrowIcon /></span>
                 <span><small>{t.features[2].title}</small><strong>{t.features[2].body}</strong></span>
+              </div>
+            </div>
+
+            <div className="mobile-showcase" aria-label="hemû app preview">
+              <div ref={mobileTrackRef} className="mobile-track" onScroll={updateMobileScreen}>
+                {mobileScreens.map((item, index) => (
+                  <div className="mobile-slide" key={item.key} aria-hidden={activeMobileScreen !== index}>
+                    <Device screen={item.screen} className="mobile-device" label={item.label} eager={index === 0} />
+                  </div>
+                ))}
+              </div>
+              <div className="mobile-pagination" role="tablist" aria-label="App screens">
+                {mobileScreens.map((item, index) => (
+                  <button
+                    type="button"
+                    role="tab"
+                    key={item.key}
+                    className={activeMobileScreen === index ? 'is-active' : ''}
+                    aria-selected={activeMobileScreen === index}
+                    aria-label={`${item.key} screen`}
+                    onClick={() => showMobileScreen(index)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mobile-downloads">
+              <div className="store-buttons">
+                <StoreButton store="App Store" icon={<AppleIcon />} comingSoon={t.comingSoon} />
+                <StoreButton store="Google Play" icon={<PlayIcon />} comingSoon={t.comingSoon} />
               </div>
             </div>
           </div>
