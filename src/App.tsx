@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import landscape from './assets/showcase/kurdistan-landscape.webp';
+import landscape from './assets/showcase/kurdistan-spring-v2.webp';
 import homeAr from './assets/screens/home-ar.webp';
 import homeCkb from './assets/screens/home-ckb.webp';
 import homeEn from './assets/screens/home-en.webp';
