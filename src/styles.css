@@ -293,25 +293,6 @@ a { color: inherit; }
 .ribbon-track span { display: inline-flex; align-items: center; gap: 12px; padding-inline: 28px; color: rgba(255,255,255,.82); font-size: 13px; font-weight: 700; white-space: nowrap; }
 .ribbon-track i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
-.story { padding: clamp(80px, 10vw, 150px) 0; background: var(--paper); }
-.story-head { display: grid; grid-template-columns: .45fr 1.55fr; gap: 30px; align-items: start; }
-.section-kicker { margin: 12px 0 0; color: var(--accent); font-size: 13px; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
-.story h2 { max-width: 850px; margin: 0; font-size: clamp(46px, 7vw, 92px); line-height: .98; letter-spacing: -.06em; }
-[dir="rtl"] .story h2 { line-height: 1.2; letter-spacing: 0; }
-.feature-list { margin-top: clamp(60px, 8vw, 110px); border-top: 1px solid var(--line); }
-.feature-list article {
-  display: grid;
-  grid-template-columns: .45fr 1.55fr;
-  gap: 30px;
-  padding: clamp(30px, 4vw, 54px) 0;
-  border-bottom: 1px solid var(--line);
-}
-.feature-index { color: var(--accent); font-size: 13px; font-weight: 800; }
-.feature-list article > div { display: grid; grid-template-columns: .8fr 1fr; gap: clamp(24px, 5vw, 90px); }
-.feature-list h3 { margin: 0; font-size: clamp(25px, 3vw, 40px); line-height: 1.08; letter-spacing: -.035em; }
-[dir="rtl"] .feature-list h3 { line-height: 1.3; letter-spacing: 0; }
-.feature-list p { max-width: 520px; margin: 0; color: #69625c; font-size: 17px; line-height: 1.65; }
-
 footer { background: #1b1815; color: rgba(255,255,255,.62); }
 .footer-inner { min-height: 112px; display: flex; align-items: center; justify-content: space-between; gap: 24px; font-size: 13px; }
 .footer-inner > div { display: flex; align-items: center; gap: 24px; }
@@ -373,12 +354,6 @@ footer { background: #1b1815; color: rgba(255,255,255,.62); }
   .device-main { width: 270px; height: 587px; top: 48%; }
   .device-back { display: none; }
   .floating-card { right: -4px; bottom: 7%; width: 220px; }
-  .story-head,
-  .feature-list article { grid-template-columns: 1fr; gap: 18px; }
-  .story h2 { font-size: 48px; }
-  [dir="rtl"] .story h2 { font-size: 43px; }
-  .feature-list article > div { grid-template-columns: 1fr; gap: 14px; }
-  .feature-list p { font-size: 15px; }
   .footer-inner { min-height: 160px; flex-wrap: wrap; padding-block: 30px; }
   .footer-inner > span { width: 100%; order: 3; }
 }

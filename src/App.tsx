@@ -111,7 +111,7 @@ export default function App() {
 
             <div className="product-stage" aria-label="hemû app preview">
               <div className="stage-halo" />
-              <Device screen={welcomeScreen} className="device-back device-welcome" label="hemû welcome screen" />
+              <Device screen={welcomeScreen} className="device-back device-welcome" label="hemû language onboarding screen" />
               <Device screen={postScreen} className="device-back device-post" label="hemû create listing screen" />
               <Device screen={homeScreen} className="device-main" label="hemû marketplace home screen" eager />
               <div className="floating-card">
@@ -130,23 +130,6 @@ export default function App() {
           </div>
         </section>
 
-        <section className="story">
-          <div className="content-wide story-head">
-            <p className="section-kicker">hemû</p>
-            <h2>{t.features[0].title}</h2>
-          </div>
-          <div className="content-wide feature-list">
-            {t.features.map((feature, index) => (
-              <article key={feature.title}>
-                <span className="feature-index">0{index + 1}</span>
-                <div>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.body}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
       </main>
 
       <footer>
