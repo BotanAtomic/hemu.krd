@@ -1,12 +1,36 @@
 import { useEffect, useState } from 'react';
 
 import landscape from './assets/showcase/kurdistan-landscape.webp';
-import homeScreen from './assets/showcase/home.webp';
-import postScreen from './assets/showcase/post.webp';
-import welcomeScreen from './assets/showcase/welcome.webp';
+import homeAr from './assets/screens/home-ar.webp';
+import homeCkb from './assets/screens/home-ckb.webp';
+import homeEn from './assets/screens/home-en.webp';
+import homeFa from './assets/screens/home-fa.webp';
+import homeKu from './assets/screens/home-ku.webp';
+import homeTr from './assets/screens/home-tr.webp';
+import onboardingAr from './assets/screens/onboarding-ar.webp';
+import onboardingCkb from './assets/screens/onboarding-ckb.webp';
+import onboardingEn from './assets/screens/onboarding-en.webp';
+import onboardingFa from './assets/screens/onboarding-fa.webp';
+import onboardingKu from './assets/screens/onboarding-ku.webp';
+import onboardingTr from './assets/screens/onboarding-tr.webp';
+import successAr from './assets/screens/success-ar.webp';
+import successCkb from './assets/screens/success-ckb.webp';
+import successEn from './assets/screens/success-en.webp';
+import successFa from './assets/screens/success-fa.webp';
+import successKu from './assets/screens/success-ku.webp';
+import successTr from './assets/screens/success-tr.webp';
 import { detectLang, LANGS, T } from './translations';
 import type { Lang } from './translations';
 import { Wordmark } from './Wordmark';
+
+const SCREENS: Record<Lang, { home: string; onboarding: string; success: string }> = {
+  en: { home: homeEn, onboarding: onboardingEn, success: successEn },
+  ckb: { home: homeCkb, onboarding: onboardingCkb, success: successCkb },
+  ku: { home: homeKu, onboarding: onboardingKu, success: successKu },
+  ar: { home: homeAr, onboarding: onboardingAr, success: successAr },
+  tr: { home: homeTr, onboarding: onboardingTr, success: successTr },
+  fa: { home: homeFa, onboarding: onboardingFa, success: successFa },
+};
 
 const AppleIcon = () => (
   <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -27,6 +51,15 @@ const GlobeIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3c2.3 2.5 3.5 5.5 3.5 9S14.3 18.5 12 21M12 3C9.7 5.5 8.5 8.5 8.5 12s1.2 6.5 3.5 9" />
+  </svg>
+);
+
+const SunIcon = () => (
+  <svg className="sun-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="3.7" fill="currentColor" />
+    <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <path d="M12 2.2v2.2M12 19.6v2.2M2.2 12h2.2M19.6 12h2.2M5.1 5.1l1.6 1.6M17.3 17.3l1.6 1.6M18.9 5.1l-1.6 1.6M6.7 17.3l-1.6 1.6" />
+    </g>
   </svg>
 );
 
@@ -57,12 +90,11 @@ function Device({ screen, className, label, eager = false }: { screen: string; c
   );
 }
 
-const CATEGORY_KEYS = ['jobs', 'vehicles', 'property', 'electronics', 'home', 'fashion'] as const;
-
 export default function App() {
   const [lang, setLang] = useState<Lang>(() => detectLang());
   const t = T[lang];
   const meta = LANGS[lang];
+  const screens = SCREENS[lang];
 
   useEffect(() => {
     document.documentElement.lang = meta.tag;
@@ -83,7 +115,7 @@ export default function App() {
               <Wordmark size={29} ink="#fff" accent="var(--accent)" />
             </a>
             <div className="nav-note">
-              <span className="sun-mark" />
+              <SunIcon />
               {t.madeFor}
             </div>
             <label className="language-control">
@@ -111,9 +143,9 @@ export default function App() {
 
             <div className="product-stage" aria-label="hemû app preview">
               <div className="stage-halo" />
-              <Device screen={welcomeScreen} className="device-back device-welcome" label="hemû language onboarding screen" />
-              <Device screen={postScreen} className="device-back device-post" label="hemû create listing screen" />
-              <Device screen={homeScreen} className="device-main" label="hemû marketplace home screen" eager />
+              <Device screen={screens.onboarding} className="device-back device-welcome" label={`hemû onboarding screen — ${meta.name}`} />
+              <Device screen={screens.success} className="device-back device-post" label={`hemû listing success screen — ${meta.name}`} />
+              <Device screen={screens.home} className="device-main" label={`hemû marketplace home screen — ${meta.name}`} eager />
               <div className="floating-card">
                 <span className="floating-icon"><ArrowIcon /></span>
                 <span><small>{t.features[2].title}</small><strong>{t.features[2].body}</strong></span>
@@ -121,24 +153,16 @@ export default function App() {
             </div>
           </div>
 
-          <div className="category-ribbon" aria-label={t.categoriesTitle}>
-            <div className="ribbon-track">
-              {[...CATEGORY_KEYS, ...CATEGORY_KEYS].map((key, index) => (
-                <span key={`${key}-${index}`}><i />{t.categories[key]}</span>
-              ))}
+          <footer className="hero-footer">
+            <div className="content-wide footer-inner">
+              <Wordmark size={20} ink="#fff" />
+              <span>{t.madeFor}</span>
+              <div><a href="mailto:hello@hemu.krd">{t.contact}</a><span>© 2026 hemû</span></div>
             </div>
-          </div>
+          </footer>
         </section>
 
       </main>
-
-      <footer>
-        <div className="content-wide footer-inner">
-          <Wordmark size={22} ink="#fff" />
-          <span>{t.madeFor}</span>
-          <div><a href="mailto:hello@hemu.krd">{t.contact}</a><span>© 2026 hemû</span></div>
-        </div>
-      </footer>
     </div>
   );
 }
