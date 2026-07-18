@@ -437,6 +437,17 @@ a { color: inherit; }
   .mobile-pagination button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .mobile-downloads { display: block; }
   .mobile-downloads .store-buttons { margin: 0 0 8px; }
+  .mobile-downloads .store-button {
+    min-height: 48px;
+    color: #fff;
+    border-color: rgba(255,255,255,.2);
+    background: linear-gradient(145deg, rgba(18,17,16,.9), rgba(8,8,8,.78));
+    box-shadow: 0 12px 28px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .mobile-downloads .store-button small { color: rgba(255,255,255,.55); }
+  .mobile-downloads .store-button strong { color: #fff; }
   .floating-card { display: none; }
   .hero-footer { height: 62px; background: rgba(12,10,8,.68); }
   .footer-inner { grid-template-columns: 1fr auto; gap: 14px; padding-block: 8px; font-size: 11px; }

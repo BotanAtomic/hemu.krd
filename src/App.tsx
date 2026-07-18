@@ -98,8 +98,8 @@ export default function App() {
   const meta = LANGS[lang];
   const screens = SCREENS[lang];
   const mobileScreens = [
-    { key: 'home', screen: screens.home, label: `hemû marketplace home screen — ${meta.name}` },
     { key: 'onboarding', screen: screens.onboarding, label: `hemû onboarding screen — ${meta.name}` },
+    { key: 'home', screen: screens.home, label: `hemû marketplace home screen — ${meta.name}` },
     { key: 'account', screen: screens.account, label: `hemû account screen — ${meta.name}` },
   ];
 
