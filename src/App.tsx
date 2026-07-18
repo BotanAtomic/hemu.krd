@@ -156,7 +156,6 @@ export default function App() {
           <footer className="hero-footer">
             <div className="content-wide footer-inner">
               <Wordmark size={20} ink="#fff" />
-              <span>{t.madeFor}</span>
               <div><a href="mailto:hello@hemu.krd">{t.contact}</a><span>© 2026 hemû</span></div>
             </div>
           </footer>
