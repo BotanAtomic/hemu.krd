@@ -13,23 +13,23 @@ import onboardingEn from './assets/screens/onboarding-en.webp';
 import onboardingFa from './assets/screens/onboarding-fa.webp';
 import onboardingKu from './assets/screens/onboarding-ku.webp';
 import onboardingTr from './assets/screens/onboarding-tr.webp';
-import successAr from './assets/screens/success-ar.webp';
-import successCkb from './assets/screens/success-ckb.webp';
-import successEn from './assets/screens/success-en.webp';
-import successFa from './assets/screens/success-fa.webp';
-import successKu from './assets/screens/success-ku.webp';
-import successTr from './assets/screens/success-tr.webp';
+import accountAr from './assets/screens/account-ar.webp';
+import accountCkb from './assets/screens/account-ckb.webp';
+import accountEn from './assets/screens/account-en.webp';
+import accountFa from './assets/screens/account-fa.webp';
+import accountKu from './assets/screens/account-ku.webp';
+import accountTr from './assets/screens/account-tr.webp';
 import { detectLang, LANGS, T } from './translations';
 import type { Lang } from './translations';
 import { Wordmark } from './Wordmark';
 
-const SCREENS: Record<Lang, { home: string; onboarding: string; success: string }> = {
-  en: { home: homeEn, onboarding: onboardingEn, success: successEn },
-  ckb: { home: homeCkb, onboarding: onboardingCkb, success: successCkb },
-  ku: { home: homeKu, onboarding: onboardingKu, success: successKu },
-  ar: { home: homeAr, onboarding: onboardingAr, success: successAr },
-  tr: { home: homeTr, onboarding: onboardingTr, success: successTr },
-  fa: { home: homeFa, onboarding: onboardingFa, success: successFa },
+const SCREENS: Record<Lang, { home: string; onboarding: string; account: string }> = {
+  en: { home: homeEn, onboarding: onboardingEn, account: accountEn },
+  ckb: { home: homeCkb, onboarding: onboardingCkb, account: accountCkb },
+  ku: { home: homeKu, onboarding: onboardingKu, account: accountKu },
+  ar: { home: homeAr, onboarding: onboardingAr, account: accountAr },
+  tr: { home: homeTr, onboarding: onboardingTr, account: accountTr },
+  fa: { home: homeFa, onboarding: onboardingFa, account: accountFa },
 };
 
 const AppleIcon = () => (
@@ -144,7 +144,7 @@ export default function App() {
             <div className="product-stage" aria-label="hemû app preview">
               <div className="stage-halo" />
               <Device screen={screens.onboarding} className="device-back device-welcome" label={`hemû onboarding screen — ${meta.name}`} />
-              <Device screen={screens.success} className="device-back device-post" label={`hemû listing success screen — ${meta.name}`} />
+              <Device screen={screens.account} className="device-back device-post" label={`hemû account screen — ${meta.name}`} />
               <Device screen={screens.home} className="device-main" label={`hemû marketplace home screen — ${meta.name}`} eager />
               <div className="floating-card">
                 <span className="floating-icon"><ArrowIcon /></span>
