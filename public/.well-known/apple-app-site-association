@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["SYYHV8RW83.krd.hemu.app"],
+        "components": [
+          { "/": "/listing/*" },
+          { "/": "/signup" }
+        ]
+      }
+    ]
+  }
+}
