@@ -32,8 +32,6 @@ const SCREENS: Record<Lang, { home: string; onboarding: string; account: string 
   fa: { home: homeFa, onboarding: onboardingFa, account: accountFa },
 };
 
-const PROMO_VIDEO = `${import.meta.env.BASE_URL}media/hemu-app-preview-en.mp4`;
-
 const AppleIcon = () => (
   <svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M17.05 12.54c-.03-2.36 1.93-3.49 2.02-3.55-1.1-1.61-2.81-1.83-3.42-1.85-1.45-.15-2.84.86-3.57.86-.74 0-1.88-.84-3.09-.82-1.59.02-3.06.93-3.88 2.35-1.65 2.87-.42 7.12 1.19 9.45.79 1.14 1.73 2.42 2.96 2.38 1.19-.05 1.64-.77 3.08-.77s1.84.77 3.1.74c1.28-.02 2.09-1.16 2.87-2.31.9-1.32 1.28-2.6 1.3-2.67-.03-.01-2.5-.96-2.56-3.81zM14.7 5.6c.66-.8 1.1-1.9.98-3-.94.04-2.09.63-2.77 1.42-.61.7-1.14 1.83-1 2.9 1.06.08 2.13-.53 2.79-1.32z" />
@@ -83,17 +81,11 @@ function StoreButton({ store, icon, comingSoon }: { store: string; icon: React.R
   );
 }
 
-function Device({ screen, className, label, eager = false, video }: { screen: string; className: string; label: string; eager?: boolean; video?: string }) {
+function Device({ screen, className, label, eager = false }: { screen: string; className: string; label: string; eager?: boolean }) {
   return (
     <div className={`device ${className}`}>
       <div className="device-speaker" />
-      {video ? (
-        <video autoPlay muted loop playsInline preload="metadata" poster={screen} aria-label={label}>
-          <source src={video} type="video/mp4" />
-        </video>
-      ) : (
-        <img src={screen} alt={label} loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : 'auto'} />
-      )}
+      <img src={screen} alt={label} loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : 'auto'} />
     </div>
   );
 }
@@ -101,8 +93,6 @@ function Device({ screen, className, label, eager = false, video }: { screen: st
 export default function App() {
   const [lang, setLang] = useState<Lang>(() => detectLang());
   const [activeMobileScreen, setActiveMobileScreen] = useState(0);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 560px)').matches);
-  const [reduceMotion, setReduceMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const mobileTrackRef = useRef<HTMLDivElement>(null);
   const t = T[lang];
   const meta = LANGS[lang];
@@ -121,21 +111,6 @@ export default function App() {
     setActiveMobileScreen(0);
     mobileTrackRef.current?.scrollTo({ left: 0 });
   }, [lang, meta, t]);
-
-  useEffect(() => {
-    const mobileQuery = window.matchMedia('(max-width: 560px)');
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const updateMobile = (event: MediaQueryListEvent) => setIsMobile(event.matches);
-    const updateMotion = (event: MediaQueryListEvent) => setReduceMotion(event.matches);
-    setIsMobile(mobileQuery.matches);
-    setReduceMotion(motionQuery.matches);
-    mobileQuery.addEventListener('change', updateMobile);
-    motionQuery.addEventListener('change', updateMotion);
-    return () => {
-      mobileQuery.removeEventListener('change', updateMobile);
-      motionQuery.removeEventListener('change', updateMotion);
-    };
-  }, []);
 
   const showMobileScreen = (index: number) => {
     const track = mobileTrackRef.current;
@@ -195,13 +170,7 @@ export default function App() {
               <div className="stage-halo" />
               <Device screen={screens.onboarding} className="device-back device-welcome" label={`hemû onboarding screen — ${meta.name}`} />
               <Device screen={screens.account} className="device-back device-post" label={`hemû account screen — ${meta.name}`} />
-              <Device
-                screen={screens.home}
-                className="device-main"
-                label={`hemû app preview — ${meta.name}`}
-                eager
-                video={lang === 'en' && !isMobile && !reduceMotion ? PROMO_VIDEO : undefined}
-              />
+              <Device screen={screens.home} className="device-main" label={`hemû marketplace home screen — ${meta.name}`} eager />
               <div className="floating-card">
                 <span className="floating-icon"><ArrowIcon /></span>
                 <span><small>{t.features[2].title}</small><strong>{t.features[2].body}</strong></span>
@@ -212,13 +181,7 @@ export default function App() {
               <div ref={mobileTrackRef} className="mobile-track" onScroll={updateMobileScreen}>
                 {mobileScreens.map((item, index) => (
                   <div className="mobile-slide" key={item.key} aria-hidden={activeMobileScreen !== index}>
-                    <Device
-                      screen={item.screen}
-                      className="mobile-device"
-                      label={item.label}
-                      eager={index === 0}
-                      video={lang === 'en' && isMobile && !reduceMotion && item.key === 'home' ? PROMO_VIDEO : undefined}
-                    />
+                    <Device screen={item.screen} className="mobile-device" label={item.label} eager={index === 0} />
                   </div>
                 ))}
               </div>
