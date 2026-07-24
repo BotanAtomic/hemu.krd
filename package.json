@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:associations": "node scripts/verify-associations.mjs",
+    "verify:associations:live": "node scripts/verify-associations.mjs https://hemu.krd"
   },
   "dependencies": {
     "react": "^19.1.0",
