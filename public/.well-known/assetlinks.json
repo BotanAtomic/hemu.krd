@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "krd.hemu.app",
+      "sha256_cert_fingerprints": [
+        "CE:E1:F0:3B:70:02:50:9C:69:C1:D9:12:1E:D2:03:A5:0E:56:82:FC:2D:E2:D0:D8:B5:49:13:DD:05:CC:B0:E9"
+      ]
+    }
+  }
+]
