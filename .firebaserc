@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "hemu-fd2f4"
+  },
+  "targets": {
+    "hemu-fd2f4": {
+      "hosting": {
+        "public-site": [
+          "hemu-fd2f4"
+        ]
+      }
+    }
+  }
+}
