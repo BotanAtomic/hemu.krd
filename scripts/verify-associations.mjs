@@ -7,6 +7,11 @@ const EXPECTED_APP_IDS = new Set([
   'H4AD8Y6PQ2.krd.hemu.app.staging',
 ]);
 const EXPECTED_PATHS = new Set(['/listing/*', '/u/*', '/signup*']);
+const EXPECTED_ANDROID_PACKAGE = 'krd.hemu.app';
+const EXPECTED_ANDROID_SHA256 = new Set([
+  'CE:E1:F0:3B:70:02:50:9C:69:C1:D9:12:1E:D2:03:A5:0E:56:82:FC:2D:E2:D0:D8:B5:49:13:DD:05:CC:B0:E9',
+]);
+const EXPECTED_ANDROID_RELATIONS = new Set(['delegate_permission/common.handle_all_urls']);
 
 function asObject(value, label) {
   assert(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`);
@@ -42,15 +47,46 @@ function validateAasa(document) {
   assertExactSet(paths, EXPECTED_PATHS, 'AASA paths');
 }
 
-async function loadLocalAasa() {
-  const path = resolve('public/.well-known/apple-app-site-association');
-  const contents = await readFile(path, 'utf8');
-  validateAasa(JSON.parse(contents));
-  console.log(`Valid AASA: ${path}`);
+function validateAssetLinks(document) {
+  assert(Array.isArray(document), 'assetlinks.json must be an array');
+  assert.equal(document.length, 1, 'assetlinks.json must have one Android app rule');
+
+  const rule = asObject(document[0], 'Android app-link rule');
+  assert.deepEqual(
+    Object.keys(rule).sort(),
+    ['relation', 'target'],
+    'Android app-link rule must contain only relation and target',
+  );
+  assertExactSet(
+    asStringArray(rule.relation, 'Android app-link relations'),
+    EXPECTED_ANDROID_RELATIONS,
+    'Android app-link relations',
+  );
+
+  const target = asObject(rule.target, 'Android app-link target');
+  assert.deepEqual(
+    Object.keys(target).sort(),
+    ['namespace', 'package_name', 'sha256_cert_fingerprints'],
+    'Android app-link target contains unexpected fields',
+  );
+  assert.equal(target.namespace, 'android_app', 'Android app-link namespace must be android_app');
+  assert.equal(target.package_name, EXPECTED_ANDROID_PACKAGE, 'Android app-link package does not match');
+  assertExactSet(
+    asStringArray(target.sha256_cert_fingerprints, 'Android signer fingerprints'),
+    EXPECTED_ANDROID_SHA256,
+    'Android signer fingerprints',
+  );
 }
 
-async function verifyRemote(origin) {
-  const url = new URL('/.well-known/apple-app-site-association', origin);
+async function loadLocal(pathname, validate, label) {
+  const path = resolve(`public${pathname}`);
+  const contents = await readFile(path, 'utf8');
+  validate(JSON.parse(contents));
+  console.log(`Valid ${label}: ${path}`);
+}
+
+async function verifyRemoteDocument(origin, pathname, validate, label) {
+  const url = new URL(pathname, origin);
   const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15_000) });
 
   assert.equal(response.status, 200, `${url} must return HTTP 200 without a redirect`);
@@ -59,11 +95,15 @@ async function verifyRemote(origin) {
     'application/json',
     `${url} must return Content-Type: application/json`,
   );
-  validateAasa(await response.json());
-  console.log(`Valid live AASA: ${url}`);
+  validate(await response.json());
+  console.log(`Valid live ${label}: ${url}`);
 }
 
-await loadLocalAasa();
+await loadLocal('/.well-known/apple-app-site-association', validateAasa, 'AASA');
+await loadLocal('/.well-known/assetlinks.json', validateAssetLinks, 'assetlinks.json');
 
 const origin = process.argv[2];
-if (origin) await verifyRemote(origin);
+if (origin) {
+  await verifyRemoteDocument(origin, '/.well-known/apple-app-site-association', validateAasa, 'AASA');
+  await verifyRemoteDocument(origin, '/.well-known/assetlinks.json', validateAssetLinks, 'assetlinks.json');
+}
