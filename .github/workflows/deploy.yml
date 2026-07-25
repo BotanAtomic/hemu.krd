@@ -25,6 +25,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: bash -n ops/coolify-deploy.sh
       - run: npm run verify:associations
       - run: npm run build
       - name: Verify production container
@@ -48,3 +49,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-coolify:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: hemu-web-staging-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Coolify and verify app-link metadata
+        env:
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_DEPLOY_URL: ${{ secrets.COOLIFY_DEPLOY_URL }}
+          COOLIFY_SMOKE_URL: ${{ vars.COOLIFY_SMOKE_URL }}
+        run: |
+          ops/coolify-deploy.sh
+          node scripts/verify-associations.mjs "$COOLIFY_SMOKE_URL"
