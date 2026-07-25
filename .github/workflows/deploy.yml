@@ -149,7 +149,7 @@ jobs:
       id-token: write
     environment:
       name: firebase-hosting-live
-      url: https://hemu-fd2f4.web.app
+      url: https://hemu.krd
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -171,5 +171,7 @@ jobs:
           --only hosting:public-site
           --project hemu-fd2f4
           --non-interactive
-      - name: Verify live Firebase app-link metadata
-        run: npm run verify:associations -- https://hemu-fd2f4.web.app
+      - name: Verify live Firebase and custom-domain app-link metadata
+        run: |
+          npm run verify:associations -- https://hemu-fd2f4.web.app
+          npm run verify:associations -- https://hemu.krd
