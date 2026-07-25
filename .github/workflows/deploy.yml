@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Website CI/CD
 
 on:
   pull_request:
@@ -8,11 +8,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: website-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -43,6 +41,10 @@ jobs:
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -68,3 +70,106 @@ jobs:
         run: |
           ops/coolify-deploy.sh
           node scripts/verify-associations.mjs "$COOLIFY_SMOKE_URL"
+
+  deploy-firebase-preview:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:associations
+      - run: npm run build
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: hemu-fd2f4
+          workload_identity_provider: projects/635215783954/locations/global/workloadIdentityPools/github-actions/providers/hemu-krd
+          service_account: github-hemu-krd@hemu-fd2f4.iam.gserviceaccount.com
+      - name: Deploy Firebase preview
+        id: firebase-preview
+        env:
+          CHANNEL_ID: pr-${{ github.event.pull_request.number }}
+          DEPLOY_RESULT: ${{ runner.temp }}/firebase-preview.json
+        run: |
+          npx --yes firebase-tools@15.24.0 hosting:channel:deploy "$CHANNEL_ID" \
+            --expires 7d \
+            --no-authorized-domains \
+            --only public-site \
+            --project hemu-fd2f4 \
+            --non-interactive \
+            --json > "$DEPLOY_RESULT"
+
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const result = JSON.parse(readFileSync(process.env.DEPLOY_RESULT, 'utf8'));
+          const deployment = result?.result?.['public-site'];
+          const url = new URL(deployment?.url);
+          const validHostname =
+            /^hemu-fd2f4--pr-\d+-[a-z0-9]+\.web\.app$/.test(url.hostname);
+
+          if (
+            result?.status !== 'success' ||
+            deployment?.target !== 'public-site' ||
+            deployment?.site !== 'hemu-fd2f4' ||
+            url.protocol !== 'https:' ||
+            !validHostname ||
+            url.username ||
+            url.password ||
+            url.port
+          ) {
+            throw new Error(`Unexpected Firebase preview result: ${JSON.stringify(result)}`);
+          }
+
+          appendFileSync(process.env.GITHUB_OUTPUT, `url=${url.origin}\n`);
+          NODE
+      - name: Verify preview app-link metadata
+        env:
+          FIREBASE_PREVIEW_URL: ${{ steps.firebase-preview.outputs.url }}
+        run: npm run verify:associations -- "$FIREBASE_PREVIEW_URL"
+
+  deploy-firebase-live:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: firebase-hosting-live
+      url: https://hemu-fd2f4.web.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:associations
+      - run: npm run build
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: hemu-fd2f4
+          workload_identity_provider: projects/635215783954/locations/global/workloadIdentityPools/github-actions/providers/hemu-krd
+          service_account: github-hemu-krd@hemu-fd2f4.iam.gserviceaccount.com
+      - name: Deploy Firebase live
+        run: >-
+          npx --yes firebase-tools@15.24.0 deploy
+          --only hosting:public-site
+          --project hemu-fd2f4
+          --non-interactive
+      - name: Verify live Firebase app-link metadata
+        run: npm run verify:associations -- https://hemu-fd2f4.web.app
