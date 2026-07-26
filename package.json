@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "deploy:firebase": "npm run build && npx --yes firebase-tools@15.24.0 deploy --only hosting",
     "verify:associations": "node scripts/verify-associations.mjs",
-    "verify:associations:live": "node scripts/verify-associations.mjs https://hemu.krd"
+    "verify:associations:live": "node scripts/verify-associations.mjs https://hemu.krd",
+    "verify:share-links": "node scripts/verify-share-links.mjs",
+    "verify:share-links:live": "node scripts/verify-share-links.mjs https://hemu.krd"
   },
   "dependencies": {
     "react": "^19.1.0",
