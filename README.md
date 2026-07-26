@@ -4,26 +4,29 @@ Landing page for **hemû** — buy and sell across Kurdistan. Live at [hemu.krd]
 
 ## Hosting and app links
 
-`Dockerfile` is the production hosting path for Coolify. It serves the Vite
-build on port `8080` and makes the extensionless Apple association endpoint
-available with `Content-Type: application/json`:
+Firebase Hosting serves the public custom domain, and `Dockerfile` provides the
+equivalent Vite build for Coolify on port `8080`. Both hosting paths serve the
+Apple and Android association documents with `Content-Type: application/json`:
 
 ```text
 https://hemu.krd/.well-known/apple-app-site-association
+https://hemu.krd/.well-known/assetlinks.json
 ```
 
-GitHub Pages remains useful for previewing the landing page, but it serves
-extensionless files as `application/octet-stream` and cannot set a custom
-response header. Do not use the GitHub Pages origin for iOS universal links.
+The native apps share these canonical public URLs:
 
-After deploying the container and pointing the apex domain at Coolify, verify
-the public response with:
+```text
+https://hemu.krd/listing/<listing-id>
+https://hemu.krd/u/<user-id>
+https://hemu.krd/signup
+```
+
+Supported share paths fall back to the landing page when the app is not
+installed. Unknown website paths intentionally remain real HTTP 404 responses.
+
+After deploying, verify both association metadata and share-route fallbacks:
 
 ```bash
 npm run verify:associations:live
+npm run verify:share-links:live
 ```
-
-Android Digital Asset Links are intentionally absent until a release APK has
-been built and its signing certificate has been verified. Publish the
-generated `assetlinks.json` only after that signer check; never use the debug
-keystore fingerprint.

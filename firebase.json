@@ -43,6 +43,24 @@
         ]
       }
     ],
+    "rewrites": [
+      {
+        "source": "/listing/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/u/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/signup",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/signup/**",
+        "destination": "/index.html"
+      }
+    ],
     "trailingSlash": false
   }
 }
