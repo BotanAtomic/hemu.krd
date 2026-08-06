@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import landscape from './assets/showcase/kurdistan-spring-v2.webp';
 import homeAr from './assets/screens/home-ar.webp';
@@ -103,14 +103,17 @@ export default function App() {
     { key: 'account', screen: screens.account, label: `hemû account screen — ${meta.name}` },
   ];
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.lang = meta.tag;
     document.documentElement.dir = meta.dir;
     document.title = `hemû — ${t.headline}`;
+  }, [meta, t]);
+
+  useEffect(() => {
     localStorage.setItem('hemu-lang', lang);
     setActiveMobileScreen(0);
     mobileTrackRef.current?.scrollTo({ left: 0 });
-  }, [lang, meta, t]);
+  }, [lang]);
 
   const showMobileScreen = (index: number) => {
     const track = mobileTrackRef.current;
