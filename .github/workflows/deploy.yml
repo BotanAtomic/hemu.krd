@@ -37,7 +37,7 @@ jobs:
           npm run verify:share-links -- http://127.0.0.1:18080
 
   deploy-coolify:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -128,7 +128,7 @@ jobs:
           npm run verify:share-links -- "$FIREBASE_PREVIEW_URL"
 
   deploy-firebase-live:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
