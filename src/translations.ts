@@ -250,16 +250,26 @@ export const T: Record<Lang, Strings> = {
   },
 };
 
-/** Pick the best initial language: saved choice, then browser locale, then Sorani. */
+const SORANI_TIME_ZONES = new Set(['Asia/Baghdad', 'Asia/Tehran']);
+
+/**
+ * Pick the best initial language: saved choice, Sorani-region timezone,
+ * browser locale, then Sorani. Arabic locales intentionally use Sorani.
+ */
 export function detectLang(): Lang {
   const saved = localStorage.getItem('hemu-lang');
   if (saved && saved in LANGS) return saved as Lang;
-  for (const loc of navigator.languages ?? []) {
+
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (SORANI_TIME_ZONES.has(timeZone)) return 'ckb';
+
+  const locales = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const loc of locales) {
     const base = loc.toLowerCase().split('-')[0];
     if (base === 'ckb') return 'ckb';
     if (base === 'ku') return 'ku';
     if (base === 'en') return 'en';
-    if (base === 'ar') return 'ar';
+    if (base === 'ar') return 'ckb';
     if (base === 'tr') return 'tr';
     if (base === 'fa') return 'fa';
   }
