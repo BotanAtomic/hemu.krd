@@ -94,7 +94,12 @@ async function verifyUnknownPathStaysMissing(origin) {
 }
 
 async function verifySiteOwnedPath(origin, pathname) {
-  const { response, url } = await fetchWithoutRedirect(origin, pathname);
+  // Redirects are followed here, unlike the share-link checks: nginx resolves a
+  // directory page by adding the trailing slash while Firebase Hosting is
+  // configured not to, and this same script runs against both. What matters is
+  // that the page still arrives, rather than the app shell having swallowed it.
+  const url = new URL(pathname, origin);
+  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   assert.equal(response.status, 200, `${url} must still be served by the site`);
   assertHtml(response, url);
   const body = await response.text();
