@@ -6,10 +6,22 @@
           "H4AD8Y6PQ2.krd.hemu.app",
           "H4AD8Y6PQ2.krd.hemu.app.staging"
         ],
+        "comment": "Ordered: the first matching component wins, so every path the site serves itself is excluded before the username catch-all. A username may contain dots, so asset names cannot be excluded by extension and are listed individually.",
         "components": [
           { "/": "/listing/*" },
           { "/": "/u/*" },
-          { "/": "/signup*" }
+          { "/": "/signup*" },
+          { "/": "/privacy*", "exclude": true },
+          { "/": "/terms*", "exclude": true },
+          { "/": "/data-deletion*", "exclude": true },
+          { "/": "/.well-known/*", "exclude": true },
+          { "/": "/og.png", "exclude": true },
+          { "/": "/favicon.png", "exclude": true },
+          { "/": "/legal.css", "exclude": true },
+          { "/": "/robots.txt", "exclude": true },
+          { "/": "/sitemap.xml", "exclude": true },
+          { "/": "/404.html", "exclude": true },
+          { "/": "/*" }
         ]
       }
     ]

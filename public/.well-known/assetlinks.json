@@ -10,5 +10,17 @@
         "CE:E1:F0:3B:70:02:50:9C:69:C1:D9:12:1E:D2:03:A5:0E:56:82:FC:2D:E2:D0:D8:B5:49:13:DD:05:CC:B0:E9"
       ]
     }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "krd.hemu.app.staging",
+      "sha256_cert_fingerprints": [
+        "AA:CE:BB:72:42:98:7A:FD:93:39:D2:EE:61:3B:91:BF:85:FA:F9:AA:40:01:4F:23:6A:5B:DE:64:1A:0C:B4:3E"
+      ]
+    }
   }
 ]
