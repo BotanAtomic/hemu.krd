@@ -7,14 +7,29 @@ const EXPECTED_REWRITES = new Map([
   ['/u/**', '/index.html'],
   ['/signup', '/index.html'],
   ['/signup/**', '/index.html'],
+  // hemu.krd/<username>. A single `*` matches one path segment, where `**`
+  // would take the whole site. Last, so the routes above still match first,
+  // and static files are served ahead of any rewrite regardless.
+  ['/*', '/index.html'],
 ]);
 const SHARED_PATHS = [
   `/listing/${EXAMPLE_ID}`,
   `/u/${EXAMPLE_ID}`,
   '/signup',
   '/signup/verify',
+  // A username may contain dots and underscores, and must not be mistaken for
+  // a static asset.
+  '/seller.one',
+  '/seller_one',
 ];
-const MISSING_PATH = '/__hemu_route_smoke_missing__';
+// Serving usernames from the root means a single unknown segment can no longer
+// 404 — static hosting cannot know whether a username exists, so it answers
+// with the landing page, exactly as an unknown listing id already does. Only a
+// deeper path is still a genuine miss.
+const LANDING_FALLBACK_PATH = '/__hemu_route_smoke_missing__';
+const MISSING_PATH = '/__hemu_route_smoke_missing__/nested';
+// The site's own pages must keep winning over the username namespace.
+const SITE_OWNED_PATHS = ['/privacy', '/terms', '/data-deletion'];
 
 function asObject(value, label) {
   assert(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`);
@@ -78,12 +93,31 @@ async function verifyUnknownPathStaysMissing(origin) {
   console.log(`Valid unknown-route 404: ${url}`);
 }
 
+async function verifySiteOwnedPath(origin, pathname) {
+  const { response, url } = await fetchWithoutRedirect(origin, pathname);
+  assert.equal(response.status, 200, `${url} must still be served by the site`);
+  assertHtml(response, url);
+  const body = await response.text();
+  assert.doesNotMatch(
+    body,
+    /<div id="root"><\/div>/u,
+    `${url} must serve its own page, not the app shell — the username rewrite has swallowed it`,
+  );
+  console.log(`Valid site-owned page: ${url}`);
+}
+
 await verifyFirebaseRewrites();
 
 const origin = process.argv[2];
 if (origin) {
   for (const pathname of SHARED_PATHS) {
     await verifySharedPath(origin, pathname);
+  }
+  // An unknown single segment is indistinguishable from an unclaimed username,
+  // so it lands on the same fallback a shared link uses.
+  await verifySharedPath(origin, LANDING_FALLBACK_PATH);
+  for (const pathname of SITE_OWNED_PATHS) {
+    await verifySiteOwnedPath(origin, pathname);
   }
   await verifyUnknownPathStaysMissing(origin);
 }
