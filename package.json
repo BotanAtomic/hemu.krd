@@ -11,11 +11,18 @@
     "verify:associations": "node scripts/verify-associations.mjs",
     "verify:associations:live": "node scripts/verify-associations.mjs https://hemu.krd",
     "verify:share-links": "node scripts/verify-share-links.mjs",
-    "verify:share-links:live": "node scripts/verify-share-links.mjs https://hemu.krd"
+    "verify:share-links:live": "node scripts/verify-share-links.mjs https://hemu.krd",
+    "verify:production-readiness": "node scripts/verify-production-readiness.mjs",
+    "verify:security-headers": "node scripts/verify-security-headers.mjs",
+    "security:secrets": "node scripts/check-secret-hygiene.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
+  },
+  "overrides": {
+    "nanoid": "3.3.18",
+    "postcss": "8.5.23"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

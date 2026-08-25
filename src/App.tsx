@@ -21,6 +21,7 @@ import accountKu from './assets/screens/account-ku.webp';
 import accountTr from './assets/screens/account-tr.webp';
 import { detectLang, LANGS, T } from './translations';
 import type { Lang } from './translations';
+import { SUPPORT_EMAIL } from './support';
 import { Wordmark } from './Wordmark';
 
 const SCREENS: Record<Lang, { home: string; onboarding: string; account: string }> = {
@@ -214,7 +215,7 @@ export default function App() {
           <footer className="hero-footer">
             <div className="content-wide footer-inner">
               <Wordmark size={20} ink="#fff" />
-              <div><a href="mailto:hello@hemu.krd">{t.contact}</a><span>© 2026 hemû</span></div>
+              <div><a href={`mailto:${SUPPORT_EMAIL}`}>{t.contact}</a><span>© 2026 hemû</span></div>
             </div>
           </footer>
         </section>
