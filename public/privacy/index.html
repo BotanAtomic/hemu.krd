@@ -14,7 +14,7 @@
       <article class="legal-card">
         <p class="eyebrow">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p class="updated">Effective and last updated: August 8, 2026</p>
+        <p class="updated">Effective and last updated: August 25, 2026</p>
 
         <p>This Privacy Policy explains how AHMAD BOTAN, a French individual entrepreneur registered under SIREN 834 031 726 and operator of hemû (“hemû,” “we,” “us,” or “our”), collects, uses, shares, and protects personal data when you use the hemû mobile application, website, and related services (the “Service”). AHMAD BOTAN is the controller responsible for deciding why and how this personal data is processed.</p>
 
@@ -30,7 +30,11 @@
 
         <p><strong>Technical and security data.</strong> We collect information needed to operate and protect the Service, such as IP address, app version, operating system, locale, device or installation identifiers, session and authentication records, push-notification tokens, request logs, and security or abuse signals.</p>
 
-        <p><strong>Usage and diagnostics data.</strong> We may collect limited product events and diagnostics, such as screen routes, feature interactions, category and city identifiers, crash information, and a normalized search query truncated to a limited length. We do not send phone numbers, email addresses, message bodies, exact GPS coordinates, or listing free text to product analytics. Session replay is not used.</p>
+        <p data-analytics-disclosure="amplitude"><strong>Product analytics (Amplitude).</strong> When the optional Amplitude integration is enabled in a production build, we send only two event types: <code>app_open</code>, which records that the app was opened, and <code>auth_signed_in</code>, with only the sign-in method and whether the sign-in created a new account. Amplitude associates these limited product-interaction events with a randomly generated Amplitude SDK device identifier. For privacy and app-store disclosure purposes, this is product-interaction and device-ID data used for analytics. We do not set an Amplitude account or user ID. Automatic event capture and session replay are not enabled.</p>
+
+        <p>We configure Amplitude not to receive account identifiers; listing, message, media, or search content; names, phone numbers, email addresses, or other contact data; city, GPS, or other location data; advertising identifiers; or platform identifiers such as IDFV or App Set ID. Apart from Amplitude’s own random SDK device identifier described above, the integration does not send device details such as manufacturer, model, operating-system version, carrier, language, or locale. We do not use Amplitude for cross-app tracking. The currently configured Amplitude project uses its US data region.</p>
+
+        <p data-diagnostics-disclosure="crashlytics"><strong>Crash diagnostics (Firebase Crashlytics).</strong> We use Firebase Crashlytics separately to understand crashes and technical failures. Crashlytics remains the destination for error diagnostics and sanitized navigation breadcrumbs; those errors and breadcrumbs are not sent to Amplitude. Crashlytics may process the technical and diagnostics data described in this policy.</p>
 
         <p><strong>Website preferences.</strong> The website may store your language choice in local browser storage. The public landing page does not currently use advertising cookies.</p>
 

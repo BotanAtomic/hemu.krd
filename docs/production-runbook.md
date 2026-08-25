@@ -23,6 +23,11 @@ configuration.
   legal `mailto:` links in sync; the readiness check will reject drift.
 - [ ] Verify legal text, retention promises and actual deletion/backup behavior
   still agree.
+- [ ] Confirm the mobile Amplitude configuration still emits only `app_open`
+  and `auth_signed_in` (`method`, `newUser`), uses the disclosed data region,
+  keeps autocapture/session replay disabled and does not set a user ID. If any
+  of these change, update the privacy policy and store privacy declarations
+  before release.
 
 ## After deployment
 
