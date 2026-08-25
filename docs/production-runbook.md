@@ -19,9 +19,8 @@ configuration.
 - [ ] `npm run security:secrets`, `npm audit --omit=dev --audit-level=high`,
   `npm run verify:production-readiness`, `npm run verify:associations`, and
   `npm run verify:share-links` pass.
-- [ ] Confirm `contact@botan.dev` is monitored. When moving to a `@hemu.krd`
-  mailbox, update `src/support.ts` and all legal `mailto:` links together; the
-  readiness check will reject drift.
+- [ ] Confirm `hello@hemu.krd` is monitored. Keep `src/support.ts` and all
+  legal `mailto:` links in sync; the readiness check will reject drift.
 - [ ] Verify legal text, retention promises and actual deletion/backup behavior
   still agree.
 
