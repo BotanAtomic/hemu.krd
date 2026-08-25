@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_coolify:
+        description: Deploy the Docker image to Coolify after the standard checks
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -41,7 +47,9 @@ jobs:
           npm run verify:security-headers -- http://127.0.0.1:18080
 
   deploy-coolify:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Firebase Hosting owns the automatic live deployment. Coolify stays an
+    # explicitly requested, independently verified fallback/staging path.
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_coolify == true
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -49,7 +57,7 @@ jobs:
       group: hemu-web-staging-deploy
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Deploy to Coolify and verify app-link metadata
         env:
           COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}

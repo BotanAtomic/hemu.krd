@@ -5,8 +5,9 @@
 `https://hemu.krd` is the sole canonical public origin for landing pages,
 privacy pages, account-deletion instructions and mobile App/Universal Links.
 Firebase Hosting currently owns the live custom-domain deployment. The Docker
-image exists for controlled Coolify deployments and smoke tests; it must not be
-treated as an independent production source of truth for the same domain.
+image exists for controlled Coolify deployments and smoke tests; its GitHub job
+is manual-only and it must not be treated as an independent production source
+of truth for the same domain.
 
 Before changing hosting, select one authoritative production origin, update its
 DNS and certificate ownership, and disable the other live deployment only after
