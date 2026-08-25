@@ -5,12 +5,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy_coolify:
-        description: Deploy the Docker image to Coolify after the standard checks
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -31,7 +25,6 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run security:secrets
-      - run: bash -n ops/coolify-deploy.sh
       - run: npm run verify:associations
       - run: npm run verify:share-links
       - run: npm run verify:production-readiness
@@ -45,29 +38,6 @@ jobs:
           npm run verify:associations -- http://127.0.0.1:18080
           npm run verify:share-links -- http://127.0.0.1:18080
           npm run verify:security-headers -- http://127.0.0.1:18080
-
-  deploy-coolify:
-    # Firebase Hosting owns the automatic live deployment. Coolify stays an
-    # explicitly requested, independently verified fallback/staging path.
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy_coolify == true
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: hemu-web-staging-deploy
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Deploy to Coolify and verify app-link metadata
-        env:
-          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-          COOLIFY_DEPLOY_URL: ${{ secrets.COOLIFY_DEPLOY_URL }}
-          COOLIFY_SMOKE_URL: ${{ vars.COOLIFY_SMOKE_URL }}
-        run: |
-          ops/coolify-deploy.sh
-          node scripts/verify-associations.mjs "$COOLIFY_SMOKE_URL"
-          node scripts/verify-share-links.mjs "$COOLIFY_SMOKE_URL"
-          node scripts/verify-security-headers.mjs "$COOLIFY_SMOKE_URL"
 
   deploy-firebase-preview:
     if: >-
