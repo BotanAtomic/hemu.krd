@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const ignoredPathFragments = ['/node_modules/', '/dist/', '/.git/'];
 const trackedFiles = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' })
@@ -20,6 +20,9 @@ const patterns = [
 
 const findings = [];
 for (const path of trackedFiles) {
+  // A tracked file may be intentionally deleted in the current change. Scan
+  // only files that will remain in the resulting tree.
+  if (!existsSync(path)) continue;
   const content = readFileSync(path, 'utf8');
   for (const [pattern, label] of patterns) {
     if (pattern.test(content)) findings.push(`${path}: ${label}`);

@@ -4,9 +4,9 @@ Landing page for **hemû** — buy and sell across Kurdistan. Live at [hemu.krd]
 
 ## Hosting and app links
 
-Firebase Hosting serves the public custom domain, and `Dockerfile` provides the
-equivalent Vite build for Coolify on port `8080`. Both hosting paths serve the
-Apple and Android association documents with `Content-Type: application/json`:
+Firebase Hosting serves the public custom domain. The portable `Dockerfile` is
+kept for local production-build verification only. Firebase serves the Apple
+and Android association documents with `Content-Type: application/json`:
 
 ```text
 https://hemu.krd/.well-known/apple-app-site-association
