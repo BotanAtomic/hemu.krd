@@ -14,7 +14,7 @@ const legalPages = [
 for (const path of legalPages) {
   const html = await readFile(path, 'utf8');
   assert.match(html, new RegExp(`mailto:${supportEmail.replace(/[.+?^${}()|[\]\\]/gu, '\\$&')}`, 'u'), `${path} must use SUPPORT_EMAIL`);
-  assert.doesNotMatch(html, /mailto:hello@hemu\.krd/u, `${path} must not use a stale support address`);
+  assert.doesNotMatch(html, /mailto:contact@botan\.dev/u, `${path} must not use a stale support address`);
 }
 
 const app = await readFile('src/App.tsx', 'utf8');
