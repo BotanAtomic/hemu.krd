@@ -67,6 +67,7 @@ jobs:
           ops/coolify-deploy.sh
           node scripts/verify-associations.mjs "$COOLIFY_SMOKE_URL"
           node scripts/verify-share-links.mjs "$COOLIFY_SMOKE_URL"
+          node scripts/verify-security-headers.mjs "$COOLIFY_SMOKE_URL"
 
   deploy-firebase-preview:
     if: >-
@@ -142,7 +143,11 @@ jobs:
           npm run verify:share-links -- "$FIREBASE_PREVIEW_URL"
 
   deploy-firebase-live:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # A manual workflow may be started from any ref in the Actions UI. Keep the
+    # live site bound to reviewed, protected main even for manual reruns.
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
