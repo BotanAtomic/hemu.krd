@@ -20,13 +20,13 @@ for (const path of legalPages) {
 const privacy = await readFile('public/privacy/index.html', 'utf8');
 const amplitudeDisclosureRequirements = [
   ['Amplitude disclosure marker', /data-analytics-disclosure="amplitude"/u],
-  ['complete Amplitude event allowlist', /only two event types:\s*<code>app_open<\/code>[\s\S]*<code>auth_signed_in<\/code>/u],
-  ['auth event field boundary', /only the sign-in method and whether the sign-in created a new account/u],
+  ['bounded Amplitude event dictionary', /bounded event dictionary for app launch, onboarding, sign-in, profile saves, listing selection\/contact intent, favorites, search outcomes, saved searches, posting progress, chat sends, notification opens\/preferences, and known client operation failures/u],
   ['random SDK device identifier', /randomly generated Amplitude SDK device identifier/u],
+  ['authenticated account identity boundary', /set the Amplitude user ID to your stable hemû account identifier/u],
+  ['public username property boundary', /only account metadata sent to Amplitude is your stable hemû account identifier, your public username when available, and a limited flag/u],
   ['analytics data-use classification', /product-interaction and device-ID data used for analytics/u],
-  ['no Amplitude account identity', /do not set an Amplitude account or user ID/u],
   ['no automatic capture or session replay', /Automatic event capture and session replay are not enabled/u],
-  ['no account, content, contact, location, advertising, or platform identifiers', /not to receive account identifiers;[\s\S]*listing, message, media, or search content;[\s\S]*contact data;[\s\S]*location data;[\s\S]*advertising identifiers;[\s\S]*platform identifiers/u],
+  ['no content, contact, location, advertising, or platform identifiers', /not to receive listing, message, media, or search content;[\s\S]*contact data;[\s\S]*location data;[\s\S]*advertising identifiers;[\s\S]*platform identifiers/u],
   ['no cross-app tracking', /do not use Amplitude for cross-app tracking/u],
   ['Amplitude US data region', /currently configured Amplitude project uses its US data region/u],
   ['Crashlytics diagnostics boundary', /data-diagnostics-disclosure="crashlytics"[\s\S]*Crashlytics remains the destination for error diagnostics[\s\S]*not sent to Amplitude/u],
