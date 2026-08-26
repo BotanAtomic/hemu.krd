@@ -2,11 +2,22 @@
 
 Landing page for **hemû** — buy and sell across Kurdistan. Live at [hemu.krd](https://hemu.krd).
 
+For the cross-repository system map, active environment matrix, and retired
+infrastructure list, read
+`../hemu-supabase/docs/SYSTEM-ARCHITECTURE.md` from the parent workspace.
+
 ## Hosting and app links
 
-Firebase Hosting serves the public custom domain. The portable `Dockerfile` is
-kept for local production-build verification only. Firebase serves the Apple
-and Android association documents with `Content-Type: application/json`:
+Firebase Hosting serves the public custom domain. It currently deploys from
+Firebase project `hemu-fd2f4` with the Hosting target for the public site. This
+is public web hosting only; it does not make the mobile app use the staging
+backend or staging Auth. Moving the public site to Firebase project
+`hemu-prod` is a future explicit decision, not a prerequisite for production
+mobile work.
+
+The portable `Dockerfile` is kept for local production-build verification
+only. Firebase serves the Apple and Android association documents with
+`Content-Type: application/json`:
 
 ```text
 https://hemu.krd/.well-known/apple-app-site-association

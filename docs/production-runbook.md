@@ -1,5 +1,11 @@
 # Public website production runbook
 
+Read `../../hemu-supabase/docs/SYSTEM-ARCHITECTURE.md` from the parent
+workspace before changing hosting, app links, or public legal disclosures.
+The live public `hemu.krd` Firebase Hosting target currently lives in Firebase
+project `hemu-fd2f4` by explicit decision. It is public hosting only, not the
+mobile staging backend.
+
 ## Canonical hosting decision
 
 `https://hemu.krd` is the sole canonical public origin for landing pages,
@@ -23,11 +29,12 @@ configuration.
   legal `mailto:` links in sync; the readiness check will reject drift.
 - [ ] Verify legal text, retention promises and actual deletion/backup behavior
   still agree.
-- [ ] Confirm the mobile Amplitude configuration still emits only `app_open`
-  and `auth_signed_in` (`method`, `newUser`), uses the disclosed data region,
-  keeps autocapture/session replay disabled and does not set a user ID. If any
-  of these change, update the privacy policy and store privacy declarations
-  before release.
+- [ ] Confirm the mobile Amplitude configuration still uses the disclosed US
+  data region, keeps autocapture/session replay disabled, sets only the stable
+  Hemu/Supabase user UUID as authenticated `user_id`, and sends only public
+  username metadata plus the bounded event dictionary in
+  `../mobile/docs/product-analytics.md`. If any of these change, update the
+  privacy policy and store privacy declarations before release.
 
 ## After deployment
 
