@@ -41,3 +41,10 @@ After deploying, verify both association metadata and share-route fallbacks:
 npm run verify:associations:live
 npm run verify:share-links:live
 ```
+
+## Mobile authentication challenge
+
+The browser security check at `/auth/captcha` uses fixed app callbacks and
+real per-environment Turnstile sitekeys. See [configuration, deployment gates
+and verification](docs/auth-captcha.md). Missing keys fail closed; this source
+change alone does not enable CAPTCHA.
