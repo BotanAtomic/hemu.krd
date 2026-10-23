@@ -24,7 +24,7 @@ const amplitudeDisclosureRequirements = [
   ['random SDK device identifier', /randomly generated Amplitude SDK device identifier/u],
   ['authenticated account identity boundary', /set the Amplitude user ID to your stable hemû account identifier/u],
   ['public username property boundary', /only account metadata sent to Amplitude is your stable hemû account identifier, your public username when available, and a limited flag/u],
-  ['analytics data-use classification', /product-interaction and device-ID data used for analytics/u],
+  ['linked analytics data-use classification', /account-identifier, product-interaction and device-ID data are used for analytics and linked to your account when signed in/u],
   ['no automatic capture or session replay', /Automatic event capture and session replay are not enabled/u],
   ['no content, contact, location, advertising, or platform identifiers', /not to receive listing, message, media, or search content;[\s\S]*contact data;[\s\S]*location data;[\s\S]*advertising identifiers;[\s\S]*platform identifiers/u],
   ['no cross-app tracking', /do not use Amplitude for cross-app tracking/u],
