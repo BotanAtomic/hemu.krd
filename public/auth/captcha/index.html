@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Security check · Hemû</title>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="stylesheet" href="/legal.css" />
+    <link rel="stylesheet" href="/auth/captcha/style.css" />
+    <script type="module" src="/auth/captcha/page.mjs"></script>
+  </head>
+  <body>
+    <main class="captcha-shell">
+      <a class="legal-brand" href="/" aria-label="Hemû home">hemû</a>
+      <h1>One quick security check</h1>
+      <p>Complete the check below to continue signing in to Hemû.</p>
+      <p id="status" role="status" aria-live="polite">Preparing your check…</p>
+      <div id="challenge"></div>
+      <div class="actions">
+        <button id="retry" type="button" hidden>Try again</button>
+        <button id="cancel" type="button" class="secondary" hidden>
+          Return to Hemû
+        </button>
+      </div>
+      <p class="privacy">
+        The security check is provided by Cloudflare Turnstile.
+        <a href="/privacy">Privacy policy</a>
+      </p>
+      <noscript
+        ><p>
+          JavaScript is required for this check. Close this page to return to
+          Hemû.
+        </p></noscript
+      >
+    </main>
+  </body>
+</html>

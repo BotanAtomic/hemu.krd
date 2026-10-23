@@ -14,7 +14,8 @@
     "verify:share-links:live": "node scripts/verify-share-links.mjs https://hemu.krd",
     "verify:production-readiness": "node scripts/verify-production-readiness.mjs",
     "verify:security-headers": "node scripts/verify-security-headers.mjs",
-    "security:secrets": "node scripts/check-secret-hygiene.mjs"
+    "security:secrets": "node scripts/check-secret-hygiene.mjs",
+    "test:captcha": "node --test scripts/auth-captcha.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
