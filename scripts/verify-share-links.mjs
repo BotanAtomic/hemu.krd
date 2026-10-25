@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 const EXAMPLE_ID = "123e4567-e89b-42d3-a456-426614174000";
 const EXPECTED_REWRITES = new Map([
   ["/auth/captcha", "/auth/captcha/index.html"],
+  ["/auth/callback", "/auth/callback/index.html"],
   ["/listing/**", "/index.html"],
   ["/u/**", "/index.html"],
   ["/signup", "/index.html"],
@@ -30,7 +31,14 @@ const SHARED_PATHS = [
 const LANDING_FALLBACK_PATH = "/__hemu_route_smoke_missing__";
 const MISSING_PATH = "/__hemu_route_smoke_missing__/nested";
 // The site's own pages must keep winning over the username namespace.
-const SITE_OWNED_PATHS = ["/privacy", "/terms", "/data-deletion"];
+const SITE_OWNED_PATHS = [
+  "/privacy",
+  "/terms",
+  "/data-deletion",
+  "/support",
+  "/auth/captcha",
+  "/auth/callback",
+];
 
 function asObject(value, label) {
   assert(

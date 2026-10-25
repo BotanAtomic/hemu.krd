@@ -21,6 +21,10 @@ keys, so the page displays an unavailable message and never loads a widget.
    this page allows scripts and frames from `https://challenges.cloudflare.com`.
    Keep no-store, no-referrer and noindex headers. Validate actual response
    headers after deployment; a local Vite preview does not exercise Hosting.
+   Keep the ordered Apple association exclusions for `/auth/captcha` and
+   `/auth/captcha/*` ahead of the username catch-all, so iOS leaves the
+   challenge and its static files in the browser. Android's claimed share-link
+   prefixes do not include this route.
 4. Run `npm run test:captcha`, `npm run build`, and the existing website
    production gates. Deploy only through the approved Hosting process.
 5. First rehearse with a real **staging** widget, its matching staging Auth
@@ -67,6 +71,22 @@ artifact preview use `/auth/captcha/index.html?environment=production&state=`
 followed by a fresh UUIDv4. Firebase's explicit rewrite serves the canonical
 `/auth/captcha` URL. Missing keys intentionally show the unavailable state;
 never replace production keys with Cloudflare test keys to pass a release gate.
+
+## Canonical browser auth return
+
+`https://hemu.krd/auth/callback` is an allowed production Auth return URL,
+but no browser sign-in product or browser session exchange is implemented.
+It serves a recovery page rather than a 404: the page strips the query and
+fragment from browser history, makes no Auth/API call, and lets the user open
+the fixed `hemu://` app link to restart sign-in. It never forwards a provider
+code or token. Route-specific no-store, no-referrer, noindex and a
+`connect-src 'none'` CSP apply to the page and its script.
+
+Native sign-in uses `hemu://auth/callback` (or the staging scheme) with a
+live in-memory attempt and its corresponding PKCE verifier. A cold app cannot
+resume that attempt. Do not replace this recovery page with a token/code relay
+or claim that it implements web authentication. iOS association exclusions
+keep this browser recovery page ahead of the username catch-all as well.
 
 Primary references: [Supabase CAPTCHA](https://supabase.com/docs/guides/auth/auth-captcha),
 [Turnstile mobile](https://developers.cloudflare.com/turnstile/get-started/mobile-implementation/),

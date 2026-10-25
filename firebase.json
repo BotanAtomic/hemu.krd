@@ -56,6 +56,18 @@
         ]
       },
       {
+        "source": "/auth/callback{,/**}",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; connect-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+          },
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "Cache-Control", "value": "no-store" },
+          { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+        ]
+      },
+      {
         "source": "/auth/captcha{,/**}",
         "headers": [
           {
@@ -81,6 +93,10 @@
       {
         "source": "/auth/captcha",
         "destination": "/auth/captcha/index.html"
+      },
+      {
+        "source": "/auth/callback",
+        "destination": "/auth/callback/index.html"
       },
       {
         "source": "/listing/**",

@@ -231,3 +231,79 @@ test("hosting applies a narrow Cloudflare CSP and no-store/no-referrer to challe
     /cloudflare/u,
   );
 });
+
+test("iOS keeps the challenge and support pages in the browser before the username catch-all", async () => {
+  const association = JSON.parse(
+    await readFile(
+      new URL("../public/.well-known/apple-app-site-association", import.meta.url),
+      "utf8",
+    ),
+  );
+  const components = association.applinks.details[0].components;
+  // Apple components use a greedy * that also spans slash characters; first
+  // match wins. A root username wildcard would otherwise claim the challenge.
+  const firstMatch = (path) =>
+    components.find((component) =>
+      new RegExp(
+        `^${component["/"]
+          .split("*")
+          .map((part) => part.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"))
+          .join(".*")}$`,
+        "u",
+      ).test(path),
+    );
+  for (const path of [
+    "/auth/captcha",
+    "/auth/captcha/",
+    "/auth/captcha/index.html",
+    "/auth/captcha/page.mjs",
+    "/auth/captcha/sitekeys.json",
+    "/auth/callback",
+    "/auth/callback/clear-url.js",
+    "/support",
+    "/support/",
+  ]) {
+    assert.equal(firstMatch(path)?.exclude, true, path);
+  }
+  for (const path of ["/seller.one", "/listing/123", "/u/123", "/signup"]) {
+    assert.notEqual(firstMatch(path)?.exclude, true, path);
+  }
+});
+
+test("the browser auth return discards credentials and offers only a fixed manual app link", async () => {
+  const script = await readFile(
+    new URL("../public/auth/callback/clear-url.js", import.meta.url),
+    "utf8",
+  );
+  const history = [];
+  const location = { pathname: "/auth/callback" };
+  for (const name of ["search", "hash", "href"]) {
+    Object.defineProperty(location, name, {
+      get() { throw new Error(`must not read ${name}`); },
+    });
+  }
+  vm.runInNewContext(script, {
+    location,
+    history: { replaceState: (...args) => history.push(args) },
+  });
+  assert.equal(history.length, 1);
+  assert.deepEqual(Array.from(history[0]), [null, "", "/auth/callback"]);
+  const html = await readFile(
+    new URL("../public/auth/callback/index.html", import.meta.url),
+    "utf8",
+  );
+  assert.match(html, /<a href="hemu:\/\/">Open Hemû<\/a>/u);
+  assert.match(html, /start signing in again/u);
+  assert.doesNotMatch(html, /https?:\/\/[^"\s]+|access_token|refresh_token|code=/u);
+  assert(html.indexOf('name="referrer" content="no-referrer"') < html.indexOf('<script'));
+  assert(html.indexOf('<script') < html.indexOf('<link'));
+  const config = JSON.parse(await readFile(new URL("../firebase.json", import.meta.url), "utf8"));
+  const headers = Object.fromEntries(config.hosting.headers.find(
+    (rule) => rule.source === "/auth/callback{,/**}",
+  ).headers.map(({ key, value }) => [key.toLowerCase(), value]));
+  assert.equal(headers["referrer-policy"], "no-referrer");
+  assert.equal(headers["cache-control"], "no-store");
+  assert.equal(headers["x-robots-tag"], "noindex, nofollow");
+  assert.match(headers["content-security-policy"], /connect-src 'none'/u);
+  assert.doesNotMatch(headers["content-security-policy"], /cloudflare|unsafe-inline|unsafe-eval/u);
+});

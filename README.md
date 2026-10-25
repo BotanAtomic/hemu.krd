@@ -8,6 +8,10 @@ infrastructure list, read
 
 ## Hosting and app links
 
+Store support and policy URLs are `/support`, `/privacy`, `/terms`, and
+`/data-deletion` on `https://hemu.krd`. These remain browser pages even when
+the app is installed.
+
 Firebase Hosting serves the public custom domain. It currently deploys from
 Firebase project `hemu-fd2f4` with the Hosting target for the public site. This
 is public web hosting only; it does not make the mobile app use the staging
