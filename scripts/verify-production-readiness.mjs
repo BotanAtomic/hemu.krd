@@ -10,6 +10,7 @@ const legalPages = [
   'public/privacy/index.html',
   'public/terms/index.html',
   'public/data-deletion/index.html',
+  'public/support/index.html',
 ];
 for (const path of legalPages) {
   const html = await readFile(path, 'utf8');

@@ -8,6 +8,10 @@ infrastructure list, read
 
 ## Hosting and app links
 
+Store support and policy URLs are `/support`, `/privacy`, `/terms`, and
+`/data-deletion` on `https://hemu.krd`. These remain browser pages even when
+the app is installed.
+
 Firebase Hosting serves the public custom domain. It currently deploys from
 Firebase project `hemu-fd2f4` with the Hosting target for the public site. This
 is public web hosting only; it does not make the mobile app use the staging
@@ -41,3 +45,10 @@ After deploying, verify both association metadata and share-route fallbacks:
 npm run verify:associations:live
 npm run verify:share-links:live
 ```
+
+## Mobile authentication challenge
+
+The browser security check at `/auth/captcha` uses fixed app callbacks and
+real per-environment Turnstile sitekeys. See [configuration, deployment gates
+and verification](docs/auth-captcha.md). Missing keys fail closed; this source
+change alone does not enable CAPTCHA.
