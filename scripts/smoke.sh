@@ -8,7 +8,7 @@ trap 'result=$?; if (( result )); then echo "FAIL: $origin${route:-/}" >&2; fi; 
 request() {
   route=$1
   http_status=$(curl --silent --show-error --max-time 15 --dump-header "$tmp/headers" --output "$tmp/body" --write-out '%{http_code}' "$origin$route")
-  [[ $http_status == "${2:-200}" ]]
+  [[ $http_status == "${2:-200}" ]] || exit 1
   grep -Eiq "^content-type: ${3:-text/html}([;[:space:]]|$)" "$tmp/headers"
 }
 
