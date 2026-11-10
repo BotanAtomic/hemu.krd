@@ -358,7 +358,7 @@ test("one-use redirect success removes widget and retains current widget options
   assert.equal(view.options().appearance, undefined);
   assert.equal(
     view.elements.get("status").textContent,
-    "Complete the security check to continue.",
+    "The security check is running. Confirm if Cloudflare asks you to.",
   );
   assert.equal(typeof view.options()["unsupported-callback"], "function");
   view.options().callback("one-use-token");

@@ -6,6 +6,13 @@ for production and staging; provider secrets belong in the matching Auth
 project. Missing or invalid keys show an unavailable state. Website configuration
 alone does not establish that server CAPTCHA policy or mobile sign-in is enabled.
 
+The English-only page explains that Hemû runs a quick security check, provided
+by Cloudflare, each time someone requests a sign-in code. It usually finishes
+by itself; sometimes Cloudflare asks the person to confirm. This wording applies
+to both the hidden WebView and browser-sheet transport. Current mobile builds
+also use the browser sheet as a one-time fallback. The Cloudflare Turnstile
+notice and privacy-policy link remain visible on the page.
+
 ## Fixed protocol
 
 Input is `environment=production|staging`, a fresh UUIDv4 `state`, and an
@@ -53,7 +60,32 @@ secrets; production and staging still require real `0x…` public keys.
 ## Hosting and rollout
 
 `firebase.json` allows Turnstile scripts and frames only on the CAPTCHA route,
-with no-store, no-referrer and noindex headers. AASA excludes `/auth/captcha`,
+with no-store, no-referrer and noindex headers. `scripts/smoke.sh` checks
+`/auth/captcha` for the exact `script-src` (`'self'` and
+`https://challenges.cloudflare.com`) and `frame-src`
+(`https://challenges.cloudflare.com`) source lists; `frame-ancestors`,
+`object-src`, `base-uri` and `form-action` must each be `'none'`. It rejects
+`unsafe-inline`, `unsafe-eval` and wildcard sources, and requires
+`Referrer-Policy: no-referrer`, `Cache-Control: no-store` and
+`X-Robots-Tag: noindex, nofollow` on production and the local emulator. Firebase
+Hosting preview channels override that header with `X-Robots-Tag: noindex`, so
+the smoke check requires that exact value on origins matching
+`^https://hemu-fd2f4--[a-z0-9-]+\.web\.app$`. The emulator does not apply this
+preview-channel override. The script also fetches `/auth/captcha/sitekeys.json`
+and requires distinct real production and staging keys, with no test-key
+entries. Test keys remain host-gated constants in `protocol.mjs`.
+
+Keep `connect-src 'self'` unless a recorded CSP violation names
+`https://challenges.cloudflare.com` for `connect-src`, whether from a local
+Firebase Hosting emulator probe, the CAP-2 device spike, or a staging or
+production report.
+
+After a widget failure, Turnstile's `api.js` attempts to send a feedback report
+from the parent page to `https://challenges.cloudflare.com`.
+`connect-src 'self'` blocks that request. This is accepted because it affects
+only Cloudflare's failure telemetry.
+
+AASA excludes `/auth/captcha`,
 `/auth/callback` and their child paths before the username catch-all so iOS
 keeps them in the browser. Android share-link prefixes exclude these routes.
 Follow [CAPTCHA bootstrap order](https://github.com/BotanAtomic/hemu-supabase/blob/main/docs/production/READINESS.md#captcha-bootstrap-order)
@@ -72,3 +104,13 @@ rewrites `/auth/captcha` to that artifact; Vite preview does not verify Hosting
 headers or routes. For deterministic WebView tests, use the host-gated test
 environments above with an injected native bridge; keep real keys in
 `sitekeys.json`.
+
+To verify the actual Hosting headers locally, run `npm run build`, then
+`npx --yes firebase-tools@15.24.0 emulators:start --only hosting --project hemu-fd2f4`
+and `bash scripts/smoke.sh http://127.0.0.1:5000` (use the port printed by the
+emulator). The emulator applies the configured `X-Robots-Tag: noindex, nofollow`
+header; it does not model the preview-channel override to `noindex`. The CAPTCHA
+header and sitekey assertions run before the unknown-path 404 check. Probe both
+test environments in Chromium with a scratch native bridge and a
+`securitypolicyviolation` listener; keep that instrumentation out of the shipped
+page. Starting the emulator does not deploy the site.
