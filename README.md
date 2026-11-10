@@ -37,6 +37,9 @@ Replace `assetlinks.json` when Android signing certificates change, retaining
 the fingerprints needed by distributed builds. See [CAPTCHA](docs/auth-captcha.md)
 for the browser challenge protocol and authentication recovery page.
 
+The `security.txt` file lives in `public/.well-known/`; renew and re-check its
+`Expires` date and `Contact` before the expiry date in the file.
+
 ## Deploy and rollback
 
 CI deploys pushes to `main` and manual runs on `main` using Google OIDC and
