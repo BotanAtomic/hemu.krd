@@ -1,54 +1,46 @@
 # hemu.krd
 
-Landing page for **hemû** — buy and sell across Kurdistan. Live at [hemu.krd](https://hemu.krd).
+Public website for **Hemû**, the marketplace for Kurdistan: landing page,
+policies, support, mobile app links and browser authentication pages.
+[hemu.krd](https://hemu.krd) uses Firebase Hosting in project `hemu-fd2f4`,
+target `public-site`. This hosts the public website independently of the
+mobile app's backend environment.
 
-For the cross-repository system map, active environment matrix, and retired
-infrastructure list, read
-`../hemu-supabase/docs/SYSTEM-ARCHITECTURE.md` from the parent workspace.
+## Commands
 
-## Hosting and app links
+Use Node 22 and install dependencies with `npm ci`.
 
-Store support and policy URLs are `/support`, `/privacy`, `/terms`, and
-`/data-deletion` on `https://hemu.krd`. These remain browser pages even when
-the app is installed.
+| Command | Job |
+| --- | --- |
+| `npm run dev` | Start the Vite development server. |
+| `npm run build` | Type-check and build into `dist/`. |
+| `npm run preview` | Preview the built site locally. |
+| `npm test` | Test the CAPTCHA protocol and page behaviour. |
+| `npm run smoke -- https://hemu.krd` | Check hosted routes, app links and headers. |
+| `npm run deploy` | Build and deploy the Firebase Hosting target. |
 
-Firebase Hosting serves the public custom domain. It currently deploys from
-Firebase project `hemu-fd2f4` with the Hosting target for the public site. This
-is public web hosting only; it does not make the mobile app use the staging
-backend or staging Auth. Moving the public site to Firebase project
-`hemu-prod` is a future explicit decision, not a prerequisite for production
-mobile work.
+The pre-PR gate is `npm test && npm run build`, also run by CI's `build` job.
 
-The portable `Dockerfile` is kept for local production-build verification
-only. Firebase serves the Apple and Android association documents with
-`Content-Type: application/json`:
+## Routes and app links
 
-```text
-https://hemu.krd/.well-known/apple-app-site-association
-https://hemu.krd/.well-known/assetlinks.json
-```
+`firebase.json` owns Hosting routes and response headers. `/listing/<id>`,
+`/u/<id>`, `/signup` and root usernames such as `/seller.one` use the SPA shell.
+`/privacy`, `/terms`, `/data-deletion`, `/support`, `/auth/captcha` and
+`/auth/callback` serve their own pages. Keep explicit rewrites ahead of `/*`,
+which must stay last; unknown deeper paths return HTTP 404.
 
-The native apps share these canonical public URLs:
+Apple and Android association files live in `public/.well-known/` and name
+both `krd.hemu.app` and `krd.hemu.app.staging`. Keep the AASA exclusions for
+site pages, authentication pages and static assets before its username catch-all.
+Replace `assetlinks.json` when Android signing certificates change, retaining
+the fingerprints needed by distributed builds. See [CAPTCHA](docs/auth-captcha.md)
+for the browser challenge protocol and authentication recovery page.
 
-```text
-https://hemu.krd/listing/<listing-id>
-https://hemu.krd/u/<user-id>
-https://hemu.krd/signup
-```
+## Deploy and rollback
 
-Supported share paths fall back to the landing page when the app is not
-installed. Unknown website paths intentionally remain real HTTP 404 responses.
-
-After deploying, verify both association metadata and share-route fallbacks:
-
-```bash
-npm run verify:associations:live
-npm run verify:share-links:live
-```
-
-## Mobile authentication challenge
-
-The browser security check at `/auth/captcha` uses fixed app callbacks and
-real per-environment Turnstile sitekeys. See [configuration, deployment gates
-and verification](docs/auth-captcha.md). Missing keys fail closed; this source
-change alone does not enable CAPTCHA.
+CI deploys pushes to `main` and manual runs on `main` using Google OIDC and
+the `firebase-hosting-live` environment. Same-repository PRs get a Firebase
+preview channel and smoke check. Live deployment runs the same smoke command
+against `https://hemu.krd`; local preview does not exercise Hosting configuration.
+For rollback, restore a known-good release from the Firebase console's Hosting
+release history, then run `npm run smoke -- https://hemu.krd`.

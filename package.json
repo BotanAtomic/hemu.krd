@@ -7,23 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "deploy:firebase": "npm run build && npx --yes firebase-tools@15.24.0 deploy --only hosting",
-    "verify:associations": "node scripts/verify-associations.mjs",
-    "verify:associations:live": "node scripts/verify-associations.mjs https://hemu.krd",
-    "verify:share-links": "node scripts/verify-share-links.mjs",
-    "verify:share-links:live": "node scripts/verify-share-links.mjs https://hemu.krd",
-    "verify:production-readiness": "node scripts/verify-production-readiness.mjs",
-    "verify:security-headers": "node scripts/verify-security-headers.mjs",
-    "security:secrets": "node scripts/check-secret-hygiene.mjs",
-    "test:captcha": "node --test scripts/auth-captcha.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "smoke": "bash scripts/smoke.sh",
+    "deploy": "npm run build && npx --yes firebase-tools@15.24.0 deploy --only hosting:public-site --project hemu-fd2f4 --non-interactive"
   },
   "dependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
-  },
-  "overrides": {
-    "nanoid": "3.3.18",
-    "postcss": "8.5.23"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
