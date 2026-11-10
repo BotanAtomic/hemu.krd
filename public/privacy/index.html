@@ -14,7 +14,7 @@
       <article class="legal-card">
         <p class="eyebrow">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p class="updated">Effective and last updated: October 25, 2026</p>
+        <p class="updated">Effective and last updated: November 10, 2026</p>
 
         <p>This Privacy Policy explains how AHMAD BOTAN, a French individual entrepreneur registered under SIREN 834 031 726 and operator of hemû (“hemû,” “we,” “us,” or “our”), collects, uses, shares, and protects personal data when you use the hemû mobile application, website, and related services (the “Service”). AHMAD BOTAN is the controller responsible for deciding why and how this personal data is processed.</p>
 
@@ -22,7 +22,7 @@
 
         <p><strong>Account and sign-in data.</strong> Depending on how you sign in, we collect your phone number, email address, or an identifier and basic profile information supplied by a sign-in provider such as Facebook or Google. We also keep your chosen display name, profile photo, language, city, and account settings.</p>
 
-        <p><strong>Marketplace content.</strong> We collect listings, photos, descriptions, prices, categories, saved items and searches, reports, and other content you submit. Before listing photos are displayed, image metadata such as embedded GPS information is removed.</p>
+        <p><strong>Marketplace content.</strong> We collect listings, photos, descriptions, prices, categories, saved items and searches, reports, and other content you submit. Location metadata, including embedded EXIF/GPS data, is stripped from listing, profile, and chat photos before upload. This does not remove locations visible in the image itself or locations you choose to share separately.</p>
 
         <p><strong>Messages and interactions.</strong> We process the text, listing details, private photos, and locations you choose to send in chats, together with conversation information needed to deliver and display them. Private chat photos are available to the intended conversation participants through access-controlled links. We also process actions such as listing views, favorites, reports, blocks, and notification preferences.</p>
 
@@ -30,13 +30,15 @@
 
         <p><strong>Technical and security data.</strong> We collect information needed to operate and protect the Service, such as IP address, app version, operating system, locale, device or installation identifiers, session and authentication records, push-notification tokens, request logs, and security or abuse signals.</p>
 
-        <p><strong>Sign-in security (Cloudflare Turnstile).</strong> When a Turnstile challenge is shown during sign-in, Cloudflare processes browser and network signals, including IP address, browser information, and the site being visited, to detect automated traffic and improve its bot detection. See Cloudflare’s <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a> for details.</p>
+        <p><strong>Sign-in security (Cloudflare Turnstile).</strong> A Cloudflare Turnstile security check runs on every request for an email or phone sign-in code, including resends, even when no visible challenge appears. Cloudflare processes browser and network signals, including IP address, browser information, and the site being visited, to detect automated traffic and improve its bot detection. See Cloudflare’s <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a> for details.</p>
 
-        <p><strong>Product analytics (Amplitude).</strong> When the optional Amplitude integration is enabled in a production build, we send a bounded event dictionary for app launch, onboarding, sign-in, profile saves, listing selection/contact intent, favorites, search outcomes, saved searches, posting progress, chat sends, notification opens/preferences, and known client operation failures. Amplitude associates signed-out events with a randomly generated Amplitude SDK device identifier. When you are signed in, we set the Amplitude user ID to your stable hemû account identifier so we can understand account-level activation and retention. For privacy and app-store disclosure purposes, account-identifier, product-interaction and device-ID data are used for analytics and linked to your account when signed in. Automatic event capture and session replay are not enabled.</p>
+        <p><strong>Product analytics (Amplitude).</strong> We use Amplitude to process product-usage events with your consent where required. In the EU, the app asks for your consent before sending analytics events to Amplitude. We send a bounded event dictionary for app launch, onboarding, sign-in, profile saves, listing selection/contact intent, favorites, search outcomes, saved searches, posting progress, chat sends, notification opens/preferences, and known client operation failures. Amplitude associates signed-out events with a randomly generated Amplitude SDK device identifier. When you are signed in, we set the Amplitude user ID to your stable hemû account identifier so we can understand account-level activation and retention. For privacy and app-store disclosure purposes, account-identifier, product-interaction and device-ID data are used for analytics and linked to your account when signed in. Automatic event capture and session replay are not enabled.</p>
 
         <p>We configure Amplitude not to receive listing, message, media, or search content; display names, phone numbers, email addresses, or other contact data; city, GPS, or other location data; advertising identifiers; or platform identifiers such as IDFV or App Set ID. The only account metadata sent to Amplitude is your stable hemû account identifier, your public username when available, and a limited flag showing whether a username exists. Events also include limited labels for the app platform, build environment, and app-language category (English, Sorani, Kurmanji, or other). Automatic collection of device manufacturer, model, operating-system version, carrier, device language, and locale is disabled. We reset the analytics identity on sign-out and account deletion. We do not use Amplitude for cross-app tracking. The currently configured Amplitude project uses its US data region.</p>
 
         <p><strong>Crash diagnostics (Firebase Crashlytics).</strong> We use Firebase Crashlytics separately to understand crashes and technical failures. Crashlytics remains the destination for error diagnostics and sanitized navigation breadcrumbs; those errors and breadcrumbs are not sent to Amplitude. Crashlytics may process the technical and diagnostics data described in this policy.</p>
+
+        <p><strong>Automatic listing review (Google Gemini).</strong> We send a listing’s title, description, and up to three photos to Google Gemini to identify prohibited content and help moderate listings. We do this with your consent where required, including asking for permission before AI listing review in the EU.</p>
 
         <p><strong>Website preferences.</strong> The website may store your language choice in local browser storage. The public landing page does not currently use advertising cookies.</p>
 
@@ -55,16 +57,32 @@
           <li>comply with applicable law and protect users, hemû, and others.</li>
         </ul>
 
+        <p><strong>Legal bases.</strong> We process account, listing, and chat data to perform our contract with you and provide the Service. We rely on legitimate interests to secure the Service, prevent fraud and abuse, moderate content, and diagnose failures. We rely on consent for analytics and, where required, for AI listing review. We also process data where necessary to meet legal obligations.</p>
+
         <h2>3. When we share data</h2>
         <p>We do not sell personal data. We share data only in the following circumstances:</p>
         <ul>
-          <li><strong>With other users.</strong> Listings, public profiles, and the content you choose to publish are visible to users. Messages are shared with their intended participants. Your sign-in email address and phone number are not displayed publicly.</li>
+          <li><strong>With other users.</strong> Listings, public profiles, and the content you choose to publish are visible to users. Messages are shared with their intended participants. Your sign-in email address and phone number are not automatically published. You may choose to add an optional contact phone number to a listing. Signed-in buyers who tap Call can obtain that number and open their phone dialer.</li>
           <li><strong>When a chat is reported.</strong> Authorized human moderators can access reported chat content, including its messages, photos, and shared locations, through audited moderation tools to investigate the report and take action.</li>
           <li><strong>With service providers.</strong> Vendors help us provide hosting, database and media storage, image delivery, authentication, email and phone verification, push notifications, content moderation, support, analytics, diagnostics, and security. They receive only the data reasonably needed to perform their services and are expected to protect it.</li>
           <li><strong>In push notifications.</strong> Chat notifications can include the sender’s name and message text, or a description of a shared listing, photo, location, or offer. This notification content passes through Expo, Apple Push Notification service (APNs), and Google Firebase Cloud Messaging (FCM), as applicable, for delivery. It may appear on your lock screen or other notification previews, depending on your device’s notification and preview settings.</li>
           <li><strong>For legal and safety reasons.</strong> We may disclose information when reasonably necessary to comply with law or valid legal process, investigate fraud or harm, enforce our agreements, or protect the rights and safety of users, hemû, or others.</li>
           <li><strong>For a business change.</strong> Data may be transferred as part of a merger, financing, acquisition, reorganization, or sale of assets, subject to appropriate confidentiality and legal safeguards.</li>
           <li><strong>With your direction or consent.</strong> We may share data when you ask us to or otherwise consent.</li>
+        </ul>
+
+        <p><strong>Named providers and processors.</strong> The following providers receive data to operate the Service:</p>
+        <ul>
+          <li><strong>Supabase</strong> provides authentication, the database, and media storage in Frankfurt, Germany, and processes account data, listings, messages, and uploaded media.</li>
+          <li><strong>Prelude</strong> processes phone numbers and verification and delivery information to send sign-in codes through SMS, WhatsApp, or Viber, as available.</li>
+          <li><strong>Postmark</strong> processes email addresses and authentication or service-email content to deliver those emails.</li>
+          <li><strong>Google Gemini</strong> receives listing titles, descriptions, and up to three photos for automatic listing review, as described above.</li>
+          <li><strong>Cloudflare Turnstile</strong> processes browser, network, and security signals for every sign-in code request, as described above.</li>
+          <li><strong>Google Maps</strong> processes map requests and the coordinates used to display locations shared in chat, together with technical connection data.</li>
+          <li><strong>Expo, Apple APNs, and Google FCM</strong> process push tokens and notification content to deliver notifications, as described above.</li>
+          <li><strong>Google Firebase Crashlytics</strong> processes crash reports and technical diagnostics.</li>
+          <li><strong>Facebook (Meta)</strong> processes sign-in identity data when you choose Facebook Login, as described below.</li>
+          <li><strong>Amplitude</strong> processes product-usage events and the analytics identifiers described above, with your consent where required.</li>
         </ul>
 
         <h2>4. Facebook and other sign-in providers</h2>
@@ -83,18 +101,20 @@
           <li>Free-text report notes are erased after 30 days; report reason codes may remain. Authentication and administrator audit records have a one-year retention window, with deleted-account free-text details and IP addresses erased after the account-deletion grace period.</li>
         </ul>
 
-        <p>Content is made inaccessible or redacted before asynchronous physical deletion finishes. Deletion jobs may require more than one processing pass. Backup copies follow a separate backup lifecycle; account deletion does not mean that every external backup, another participant’s saved copy, or an operating-system notification is immediately removed. Some information may be retained longer where required by law. See our <a href="/data-deletion">User Data Deletion Instructions</a> for the request process.</p>
+        <p><strong>Backups.</strong> Supabase Pro daily database backups are retained for seven days and do not include stored photo files. Our launch backup policy also provides for weekly copies of avatar and listing photos in a private Google Cloud bucket, accessible only to the owner and retained for at most 14 days; chat photos are excluded from these copies.</p>
+        <!-- OWNER: confirm BL-4 weekly avatar/listing photo backups in the private hemu-prod bucket, owner-only access, maximum 14-day retention, no chat-media, and replay of erasure after any restore before publication. -->
+        <p>Content is made inaccessible or redacted before asynchronous physical deletion finishes. Deletion jobs may require more than one processing pass. Backup copies expire within the separate windows above. Following a restore, account erasure and media purges must be reapplied before the Service reopens. Account deletion does not immediately remove another participant’s saved copy or an operating-system notification. Some information may be retained longer where required by law. See our <a href="/data-deletion">User Data Deletion Instructions</a> for the request process.</p>
 
         <h2>6. Your choices and rights</h2>
-        <p>Depending on where you live, you may have rights to request access to, correction of, deletion of, restriction of, or a copy of your personal data, or to object to certain processing. You may also have the right to complain to the privacy or data-protection authority where you live.</p>
+        <p>Under applicable data-protection law, you may request access to, correction of, deletion of, restriction of, or a copy of your personal data, or object to certain processing. You may also complain to a supervisory data-protection authority, including the authority where you live.</p>
 
-        <p>You can update several profile and preference fields in the app, control location and notification permissions through your device, and delete your account from hemû Settings. See our <a href="/data-deletion">User Data Deletion Instructions</a> for the deletion process and retention details. To make another privacy request, email <a href="mailto:hello@hemu.krd?subject=Hemu%20privacy%20request">hello@hemu.krd</a>. We may need to verify your identity before fulfilling a request.</p>
+        <p>You can update several profile and preference fields in the app, control location and notification permissions through your device, and delete your account from hemû Settings. You may withdraw consent for processing based on consent at any time; this does not affect processing already carried out lawfully. See our <a href="/data-deletion">User Data Deletion Instructions</a> for the deletion process and retention details. To make another privacy request, withdraw consent, or object to processing, email <a href="mailto:hello@hemu.krd?subject=Hemu%20privacy%20request">hello@hemu.krd</a>. We may need to verify your identity before fulfilling a request.</p>
 
         <h2>7. Security</h2>
         <p>We use technical and organizational safeguards designed to protect personal data, including access controls, encryption in transit, private storage and access-controlled links for chat photos, short-lived authentication credentials, and monitoring for abuse. No system is completely secure, so we cannot guarantee absolute security.</p>
 
         <h2>8. International processing</h2>
-        <p>hemû and its service providers may process data in countries other than the country where you live. Where required, we use appropriate safeguards for international transfers. The protections and legal rules in those countries may differ from those in your country.</p>
+        <p>hemû is operated from France, and our production Supabase database and media storage are in Frankfurt, Germany. Other service providers may process data outside your country or the European Economic Area, including in the United States through providers such as Google, Cloudflare, and Amplitude. Where required, we use appropriate safeguards for international transfers. The protections and legal rules in those countries may differ from those in your country. Contact us for information about the safeguards applicable to your data.</p>
 
         <h2>9. Children’s privacy</h2>
         <p>hemû is intended for people aged 13 and older. The Service is not directed to children under 13 or children who are not legally permitted to use it or consent to data processing in their jurisdiction. We do not knowingly collect personal data from such children. If you believe a child has provided personal data contrary to this section, contact us so we can investigate and take appropriate action.</p>
@@ -104,6 +124,8 @@
 
         <h2>11. Contact us</h2>
         <p>The data controller is AHMAD BOTAN, Entrepreneur individuel, SIREN 834 031 726, France. For questions or requests about privacy, contact <a href="mailto:hello@hemu.krd">hello@hemu.krd</a>.</p>
+        <!-- OWNER: postal address -->
+        <p>Postal address: awaiting confirmation by the owner.</p>
       </article>
       <footer class="legal-footer">© 2026 hemû</footer>
     </main>
