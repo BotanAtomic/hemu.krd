@@ -5,6 +5,7 @@ policies, support, mobile app links and browser authentication pages.
 [hemu.krd](https://hemu.krd) uses Firebase Hosting in project `hemu-fd2f4`,
 target `public-site`. This hosts the public website independently of the
 mobile app's backend environment.
+See the [cross-repo system map](https://github.com/BotanAtomic/hemu-supabase/blob/main/docs/SYSTEM-ARCHITECTURE.md).
 
 ## Commands
 
@@ -44,3 +45,4 @@ preview channel and smoke check. Live deployment runs the same smoke command
 against `https://hemu.krd`; local preview does not exercise Hosting configuration.
 For rollback, restore a known-good release from the Firebase console's Hosting
 release history, then run `npm run smoke -- https://hemu.krd`.
+Before rolling back, confirm that the release's AASA and `assetlinks.json` still match the current iOS Team ID / app IDs and Android signing fingerprints; otherwise app links break.
