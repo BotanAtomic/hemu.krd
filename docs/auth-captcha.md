@@ -6,6 +6,12 @@ for production and staging; provider secrets belong in the matching Auth
 project. Missing or invalid keys show an unavailable state. Website configuration
 alone does not establish that server CAPTCHA policy or mobile sign-in is enabled.
 
+The English-only page explains that Hemû runs a quick security check, provided
+by Cloudflare, each time someone requests a sign-in code. It usually finishes
+by itself; sometimes Cloudflare asks the person to confirm. This wording applies
+to both the hidden WebView and older browser-sheet transport. The Cloudflare
+Turnstile notice and privacy-policy link remain visible on the page.
+
 ## Fixed protocol
 
 Input is `environment=production|staging`, a fresh UUIDv4 `state`, and an
@@ -53,7 +59,23 @@ secrets; production and staging still require real `0x…` public keys.
 ## Hosting and rollout
 
 `firebase.json` allows Turnstile scripts and frames only on the CAPTCHA route,
-with no-store, no-referrer and noindex headers. AASA excludes `/auth/captcha`,
+with no-store, no-referrer and noindex headers. `scripts/smoke.sh` checks
+`/auth/captcha` for the exact `script-src` (`'self'` and
+`https://challenges.cloudflare.com`) and `frame-src`
+(`https://challenges.cloudflare.com`) source lists; `frame-ancestors`,
+`object-src`, `base-uri` and `form-action` must each be `'none'`. It rejects
+`unsafe-inline`, `unsafe-eval` and wildcard sources, and requires
+`Referrer-Policy: no-referrer`, `Cache-Control: no-store` and
+`X-Robots-Tag: noindex, nofollow`. It also fetches
+`/auth/captcha/sitekeys.json` and requires real production and staging keys,
+with no test-key entries. Test keys remain host-gated constants in
+`protocol.mjs`.
+
+Keep `connect-src 'self'` unless a local Firebase Hosting emulator probe records
+a `connect-src` violation naming `https://challenges.cloudflare.com`. Only that
+evidence justifies adding the Cloudflare origin to `connect-src`.
+
+AASA excludes `/auth/captcha`,
 `/auth/callback` and their child paths before the username catch-all so iOS
 keeps them in the browser. Android share-link prefixes exclude these routes.
 Follow [CAPTCHA bootstrap order](https://github.com/BotanAtomic/hemu-supabase/blob/main/docs/production/READINESS.md#captcha-bootstrap-order)
@@ -72,3 +94,11 @@ rewrites `/auth/captcha` to that artifact; Vite preview does not verify Hosting
 headers or routes. For deterministic WebView tests, use the host-gated test
 environments above with an injected native bridge; keep real keys in
 `sitekeys.json`.
+
+To verify the actual Hosting headers locally, run `npm run build`, then
+`npx --yes firebase-tools@15.24.0 emulators:start --only hosting --project hemu-fd2f4`
+and `bash scripts/smoke.sh http://127.0.0.1:5000` (use the port printed by the
+emulator). The CAPTCHA header and sitekey assertions run before the unknown-path
+404 check. Probe both test environments in Chromium with a scratch native bridge
+and a `securitypolicyviolation` listener; keep that instrumentation out of the
+shipped page. Starting the emulator does not deploy the site.

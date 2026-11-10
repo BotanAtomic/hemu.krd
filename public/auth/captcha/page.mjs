@@ -141,7 +141,7 @@ async function start() {
       if (!webview) clearTimeout(timeout);
       status.textContent = webview
         ? ""
-        : "Complete the security check to continue.";
+        : "The security check is running. Confirm if Cloudflare asks you to.";
       widget = window.turnstile.render("#challenge", {
         sitekey,
         theme: "light",
