@@ -9,8 +9,9 @@ alone does not establish that server CAPTCHA policy or mobile sign-in is enabled
 The English-only page explains that Hemû runs a quick security check, provided
 by Cloudflare, each time someone requests a sign-in code. It usually finishes
 by itself; sometimes Cloudflare asks the person to confirm. This wording applies
-to both the hidden WebView and older browser-sheet transport. The Cloudflare
-Turnstile notice and privacy-policy link remain visible on the page.
+to both the hidden WebView and browser-sheet transport. Current mobile builds
+also use the browser sheet as a one-time fallback. The Cloudflare Turnstile
+notice and privacy-policy link remain visible on the page.
 
 ## Fixed protocol
 
@@ -66,14 +67,23 @@ with no-store, no-referrer and noindex headers. `scripts/smoke.sh` checks
 `object-src`, `base-uri` and `form-action` must each be `'none'`. It rejects
 `unsafe-inline`, `unsafe-eval` and wildcard sources, and requires
 `Referrer-Policy: no-referrer`, `Cache-Control: no-store` and
-`X-Robots-Tag: noindex, nofollow`. It also fetches
-`/auth/captcha/sitekeys.json` and requires real production and staging keys,
-with no test-key entries. Test keys remain host-gated constants in
-`protocol.mjs`.
+`X-Robots-Tag: noindex, nofollow` on production and the local emulator. Firebase
+Hosting preview channels override that header with `X-Robots-Tag: noindex`, so
+the smoke check requires that exact value on origins matching
+`^https://hemu-fd2f4--[a-z0-9-]+\.web\.app$`. The emulator does not apply this
+preview-channel override. The script also fetches `/auth/captcha/sitekeys.json`
+and requires distinct real production and staging keys, with no test-key
+entries. Test keys remain host-gated constants in `protocol.mjs`.
 
-Keep `connect-src 'self'` unless a local Firebase Hosting emulator probe records
-a `connect-src` violation naming `https://challenges.cloudflare.com`. Only that
-evidence justifies adding the Cloudflare origin to `connect-src`.
+Keep `connect-src 'self'` unless a recorded CSP violation names
+`https://challenges.cloudflare.com` for `connect-src`, whether from a local
+Firebase Hosting emulator probe, the CAP-2 device spike, or a staging or
+production report.
+
+After a widget failure, Turnstile's `api.js` attempts to send a feedback report
+from the parent page to `https://challenges.cloudflare.com`.
+`connect-src 'self'` blocks that request. This is accepted because it affects
+only Cloudflare's failure telemetry.
 
 AASA excludes `/auth/captcha`,
 `/auth/callback` and their child paths before the username catch-all so iOS
@@ -98,7 +108,9 @@ environments above with an injected native bridge; keep real keys in
 To verify the actual Hosting headers locally, run `npm run build`, then
 `npx --yes firebase-tools@15.24.0 emulators:start --only hosting --project hemu-fd2f4`
 and `bash scripts/smoke.sh http://127.0.0.1:5000` (use the port printed by the
-emulator). The CAPTCHA header and sitekey assertions run before the unknown-path
-404 check. Probe both test environments in Chromium with a scratch native bridge
-and a `securitypolicyviolation` listener; keep that instrumentation out of the
-shipped page. Starting the emulator does not deploy the site.
+emulator). The emulator applies the configured `X-Robots-Tag: noindex, nofollow`
+header; it does not model the preview-channel override to `noindex`. The CAPTCHA
+header and sitekey assertions run before the unknown-path 404 check. Probe both
+test environments in Chromium with a scratch native bridge and a
+`securitypolicyviolation` listener; keep that instrumentation out of the shipped
+page. Starting the emulator does not deploy the site.

@@ -29,7 +29,12 @@ for route in /privacy /terms /data-deletion /support /auth/captcha /auth/callbac
 done
 echo 'PASS site pages: own HTML'
 request /auth/captcha
-for header in 'referrer-policy: no-referrer' 'cache-control: no-store' 'x-robots-tag: noindex, nofollow'; do
+robots='x-robots-tag: noindex, nofollow'
+if [[ $origin =~ ^https://hemu-fd2f4--[a-z0-9-]+\.web\.app$ ]]; then
+  # Firebase Hosting preview channels replace X-Robots-Tag with noindex.
+  robots='x-robots-tag: noindex'
+fi
+for header in 'referrer-policy: no-referrer' 'cache-control: no-store' "$robots"; do
   grep -Fiqx "$header" < <(tr -d '\r' < "$tmp/headers")
 done
 node --input-type=module - "$tmp/headers" <<'NODE'
@@ -65,8 +70,9 @@ const config = JSON.parse(readFileSync(process.argv[2], "utf8"));
 assert.deepEqual(Object.keys(config).sort(), ["production", "staging"]);
 for (const environment of ["production", "staging"])
   assert.match(config[environment], /^0x[A-Za-z0-9_-]{20,100}$/u, `${environment} real public sitekey`);
+assert.notEqual(config.production, config.staging, "production and staging sitekeys differ");
 NODE
-echo 'PASS captcha sitekeys: production and staging real keys, no test keys'
+echo 'PASS captcha sitekeys: distinct production and staging real keys, no test keys'
 request /a/b/c 404
 echo 'PASS unknown deep path: 404'
 request /
