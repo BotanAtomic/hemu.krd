@@ -1,0 +1,100 @@
+name: Website CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  deploy-firebase-preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: hemu-fd2f4
+          workload_identity_provider: projects/635215783954/locations/global/workloadIdentityPools/github-actions/providers/hemu-krd
+          service_account: github-hemu-krd@hemu-fd2f4.iam.gserviceaccount.com
+      - name: Deploy Firebase preview
+        id: firebase-preview
+        env:
+          CHANNEL_ID: pr-${{ github.event.pull_request.number }}
+          DEPLOY_RESULT: ${{ runner.temp }}/firebase-preview.json
+        run: |
+          npx --yes firebase-tools@15.24.0 hosting:channel:deploy "$CHANNEL_ID" \
+            --expires 7d --no-authorized-domains --only public-site \
+            --project hemu-fd2f4 --non-interactive --json > "$DEPLOY_RESULT"
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const result = JSON.parse(readFileSync(process.env.DEPLOY_RESULT, 'utf8'));
+          const deployment = result?.result?.['public-site'];
+          const url = new URL(deployment?.url);
+          if (result?.status !== 'success' || deployment?.target !== 'public-site' ||
+              deployment?.site !== 'hemu-fd2f4' || url.protocol !== 'https:' ||
+              !/^hemu-fd2f4--pr-\d+-[a-z0-9]+\.web\.app$/.test(url.hostname) ||
+              url.username || url.password || url.port) {
+            throw new Error('Unexpected Firebase preview result');
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `url=${url.origin}\n`);
+          NODE
+      - run: npm run smoke -- "$FIREBASE_PREVIEW_URL"
+        env:
+          FIREBASE_PREVIEW_URL: ${{ steps.firebase-preview.outputs.url }}
+
+  deploy:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: firebase-hosting-live
+      url: https://hemu.krd
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: hemu-fd2f4
+          workload_identity_provider: projects/635215783954/locations/global/workloadIdentityPools/github-actions/providers/hemu-krd
+          service_account: github-hemu-krd@hemu-fd2f4.iam.gserviceaccount.com
+      - run: npm run deploy
+      - run: npm run smoke -- https://hemu.krd

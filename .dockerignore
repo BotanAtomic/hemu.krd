@@ -1,9 +1,0 @@
-.git
-.github
-.screenshots
-dist
-node_modules
-qa
-gha-creds-*.json
-*.log
-*.tsbuildinfo

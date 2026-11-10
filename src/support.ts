@@ -1,5 +1,4 @@
 /**
- * Public support address. Static legal pages cannot import this module, so the
- * production-readiness check verifies their mailto links stay in sync.
+ * Public support address. Keep the static legal pages' mailto links in sync.
  */
 export const SUPPORT_EMAIL = 'hello@hemu.krd';

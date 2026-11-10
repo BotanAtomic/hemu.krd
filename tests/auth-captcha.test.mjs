@@ -232,7 +232,7 @@ test("hosting applies a narrow Cloudflare CSP and no-store/no-referrer to challe
   );
 });
 
-test("iOS keeps the challenge and support pages in the browser before the username catch-all", async () => {
+test("iOS keeps all site-owned pages and static assets in the browser before the username catch-all", async () => {
   const association = JSON.parse(
     await readFile(
       new URL("../public/.well-known/apple-app-site-association", import.meta.url),
@@ -241,7 +241,7 @@ test("iOS keeps the challenge and support pages in the browser before the userna
   );
   const components = association.applinks.details[0].components;
   // Apple components use a greedy * that also spans slash characters; first
-  // match wins. A root username wildcard would otherwise claim the challenge.
+  // match wins. A root username wildcard would otherwise claim site-owned paths.
   const firstMatch = (path) =>
     components.find((component) =>
       new RegExp(
@@ -253,6 +253,12 @@ test("iOS keeps the challenge and support pages in the browser before the userna
       ).test(path),
     );
   for (const path of [
+    "/privacy",
+    "/privacy/",
+    "/terms",
+    "/terms/",
+    "/data-deletion",
+    "/data-deletion/",
     "/auth/captcha",
     "/auth/captcha/",
     "/auth/captcha/index.html",
@@ -262,6 +268,13 @@ test("iOS keeps the challenge and support pages in the browser before the userna
     "/auth/callback/clear-url.js",
     "/support",
     "/support/",
+    "/.well-known/assetlinks.json",
+    "/og.png",
+    "/favicon.png",
+    "/legal.css",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/404.html",
   ]) {
     assert.equal(firstMatch(path)?.exclude, true, path);
   }
