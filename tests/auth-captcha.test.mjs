@@ -356,6 +356,10 @@ test("one-use redirect success removes widget and retains current widget options
   assert.equal(view.options().action, "mobile-auth");
   assert.equal(view.options()["response-field"], false);
   assert.equal(view.options().appearance, undefined);
+  assert.equal(
+    view.elements.get("status").textContent,
+    "Complete the security check to continue.",
+  );
   assert.equal(typeof view.options()["unsupported-callback"], "function");
   view.options().callback("one-use-token");
   view.options().callback("second-token");
@@ -433,6 +437,7 @@ test("webview interactions and one-use token use the bridge without redirects", 
   assert.equal(options.appearance, "interaction-only");
   assert.equal(options.action, "mobile-auth");
   assert.equal(options["response-field"], false);
+  assert.equal(view.elements.get("status").textContent, "");
   options["before-interactive-callback"]();
   options["after-interactive-callback"]();
   options.callback("one-use-token");
@@ -533,7 +538,25 @@ test("webview deadline covers a stalled widget but ends before human interaction
   assert.deepEqual(view.messages.at(-1), { v: 1, type: "interactive", state });
 });
 
-test("webview config failures report config and retry can fetch a valid key", async () => {
+test("webview configuration fetch failures report load and offer retry", async () => {
+  for (const failure of [{ fetchError: true }, { responseOk: false }]) {
+    const view = await webviewPage(failure);
+    assert.deepEqual(view.messages, [
+      { v: 1, type: "error", state, reason: "load" },
+    ]);
+    assert.equal(view.options(), undefined);
+    assert.equal(view.elements.get("retry").hidden, false);
+    assert.equal(view.elements.get("retry").disabled, false);
+    assert.equal(view.pendingTimers.size, 0);
+    assert.doesNotMatch(
+      view.elements.get("status").textContent,
+      /private network error/u,
+    );
+    assert.deepEqual(view.redirects, []);
+  }
+});
+
+test("webview reachable config failures report config and retry can fetch a valid key", async () => {
   for (const config of [null, {}, { production: "1x00000000000000000000BB" }]) {
     const view = await webviewPage({ config });
     assert.deepEqual(view.messages, [

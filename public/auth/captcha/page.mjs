@@ -102,6 +102,7 @@ async function start() {
       );
   }, 30_000);
   let sitekey;
+  let configErrorReason = "load";
   try {
     const response = await fetch("/auth/captcha/sitekeys.json", {
       cache: "no-store",
@@ -110,6 +111,7 @@ async function start() {
     });
     if (!current()) return;
     if (!response.ok) throw new Error("Unavailable configuration");
+    configErrorReason = "config";
     const config = await response.json();
     if (!current()) return;
     sitekey = publicSitekey(config, request.environment);
@@ -125,7 +127,7 @@ async function start() {
   } catch {
     if (current())
       fail(
-        "config",
+        configErrorReason,
         webview
           ? "Sign-in verification is temporarily unavailable. Check your connection and try again."
           : "The security check is unavailable. Check your connection and try again.",
@@ -138,7 +140,7 @@ async function start() {
       // A hidden WebView must also time out if the rendered iframe stalls.
       if (!webview) clearTimeout(timeout);
       status.textContent = webview
-        ? "Complete the check below to continue."
+        ? ""
         : "Complete the security check to continue.";
       widget = window.turnstile.render("#challenge", {
         sitekey,

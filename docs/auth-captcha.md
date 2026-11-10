@@ -32,7 +32,7 @@ navigates to an app scheme. Every message is JSON passed to that bridge with
 | `token`            | `token`: 1–2048 printable non-space ASCII characters               | Successful check; sent once, then the widget is removed.                                                     |
 | `interactive`      | None                                                               | Turnstile's `before-interactive-callback`; the app shows its sheet.                                          |
 | `interactive-done` | None                                                               | Turnstile's `after-interactive-callback`.                                                                    |
-| `error`            | `reason`: `config`, `load`, `expired`, `timeout`, or `unsupported` | Invalid/missing configuration, script/widget failure, expiry, timeout, or unsupported browser, respectively. |
+| `error`            | `reason`: `config`, `load`, `expired`, `timeout`, or `unsupported` | Invalid/missing configuration in a reachable sitekeys.json, configuration fetch or script/widget loading failure, expiry, timeout, or unsupported browser, respectively. |
 | `cancelled`        | None                                                               | Visitor taps Return to Hemû; the widget is removed.                                                          |
 
 Errors offer Try again; a later successful check can still send its one token.
