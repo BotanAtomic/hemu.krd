@@ -39,6 +39,16 @@ for the browser challenge protocol and authentication recovery page.
 
 ## Deploy and rollback
 
+Manual `npm run deploy` uses the local service-account credential file at
+`$HOME/.config/hemu/firebase/release-service-account.json` when present.
+Set `GOOGLE_APPLICATION_CREDENTIALS` to use another credential file. The command
+isolates Firebase's saved login and ignores `FIREBASE_TOKEN` when using this file;
+without one, it uses the existing Firebase CLI login. Credentials are passed only
+to Firebase, never to the site build. This Mac uses keyless service-account
+impersonation. Keep the private credential file outside the repository with mode
+`600`. The account needs Firebase Hosting Admin, API Keys Viewer and Service Usage
+Consumer on `hemu-fd2f4`.
+
 CI deploys pushes to `main` and manual runs on `main` using Google OIDC and
 the `firebase-hosting-live` environment. Same-repository PRs get a Firebase
 preview channel and smoke check. Live deployment runs the same smoke command
