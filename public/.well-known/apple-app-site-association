@@ -23,6 +23,8 @@
           { "/": "/og.png", "exclude": true },
           { "/": "/favicon.png", "exclude": true },
           { "/": "/legal.css", "exclude": true },
+          { "/": "/lang.js", "exclude": true },
+          { "/": "/assets/*", "exclude": true },
           { "/": "/robots.txt", "exclude": true },
           { "/": "/sitemap.xml", "exclude": true },
           { "/": "/404.html", "exclude": true },

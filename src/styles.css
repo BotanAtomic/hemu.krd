@@ -158,6 +158,7 @@ a { color: inherit; }
   font-weight: 750;
 }
 [dir="rtl"] .launch-pill { letter-spacing: 0; text-transform: none; }
+.launch-pill i { font-style: normal; }
 .launch-pill span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(255,122,22,.18); }
 
 .hero h1 {
@@ -292,6 +293,13 @@ a { color: inherit; }
 .footer-inner a { color: #fff; text-decoration: none; font-weight: 700; }
 
 @keyframes landscape-in { from { opacity: 0; transform: scale(1.05); } }
+/* index.html is drawn in Sorani; /lang.js adds this class for any other language
+   until src/main.ts has translated the text. The photo and wash stay visible. */
+.lang-pending .nav-note,
+.lang-pending .language-control,
+.lang-pending .hero-grid,
+.lang-pending .hero-footer { visibility: hidden; }
+
 @keyframes copy-in { from { opacity: 0; transform: translateY(24px); } }
 @keyframes stage-in { from { opacity: 0; transform: translateY(34px) scale(.97); } }
 @media (max-width: 1120px) {

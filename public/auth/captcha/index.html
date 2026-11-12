@@ -9,6 +9,12 @@
     <link rel="icon" href="/favicon.png" />
     <link rel="stylesheet" href="/legal.css" />
     <link rel="stylesheet" href="/auth/captcha/style.css" />
+    <link
+      rel="preload"
+      as="script"
+      href="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+    />
+    <link rel="modulepreload" href="/auth/captcha/protocol.mjs" />
     <script type="module" src="/auth/captcha/page.mjs"></script>
   </head>
   <body>
