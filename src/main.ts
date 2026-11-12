@@ -2,7 +2,7 @@ import './styles.css';
 import { LANGS, T, pageLang } from './translations';
 import type { Lang } from './translations';
 
-type Screen = 'home' | 'onboarding' | 'account';
+type Screen = 'home' | 'listing' | 'profile';
 
 // Hashed URLs of every language's screenshots; the Sorani ones are also named
 // directly in index.html so the browser can fetch them before this module runs.
@@ -11,12 +11,16 @@ const screenUrls = import.meta.glob<string>('./assets/screens/*.webp', {
   query: '?url',
   import: 'default',
 });
-const screenUrl = (screen: Screen, lang: Lang) => screenUrls[`./assets/screens/${screen}-${lang}.webp`];
+// The screens come from the "hemû - app" design, which has no Kurmanji or Persian
+// set: those languages show the English and Sorani screens.
+const SCREEN_LANG: Partial<Record<Lang, Lang>> = { ku: 'en', fa: 'ckb' };
+const screenUrl = (screen: Screen, lang: Lang) =>
+  screenUrls[`./assets/screens/${screen}-${SCREEN_LANG[lang] ?? lang}.webp`];
 
 const ALT: Record<Screen, string> = {
   home: 'marketplace home screen',
-  onboarding: 'onboarding screen',
-  account: 'account screen',
+  listing: 'listing screen',
+  profile: 'seller profile screen',
 };
 
 const root = document.documentElement;
