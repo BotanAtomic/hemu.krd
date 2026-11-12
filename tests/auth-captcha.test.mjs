@@ -393,6 +393,28 @@ test("redirect cancel returns no token and errors retain retry without leaking d
   );
 });
 
+test("the page preloads exactly the widget script and protocol module it will use", async () => {
+  const html = await readFile(
+    new URL("../public/auth/captcha/index.html", import.meta.url),
+    "utf8",
+  );
+  const source = await readFile(
+    new URL("../public/auth/captcha/page.mjs", import.meta.url),
+    "utf8",
+  );
+  const widget = source.match(
+    /"(https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js\?render=explicit)"/u,
+  )?.[1];
+  assert(widget, "page.mjs names the widget script");
+  assert(html.includes(`rel="preload"\n      as="script"\n      href="${widget}"`));
+  assert(!/<link[^>]*preload[^>]*crossorigin/u.test(html));
+  assert.match(
+    html,
+    /<link rel="modulepreload" href="\/auth\/captcha\/protocol\.mjs" \/>/u,
+  );
+  assert.match(source, /from "\.\/protocol\.mjs"/u);
+});
+
 test("loads only official widget script and handles script errors and timeout", async () => {
   const loading = await page({ widget: false });
   assert.equal(
@@ -707,6 +729,8 @@ test("iOS keeps all site-owned pages and static assets in the browser before the
     "/og.png",
     "/favicon.png",
     "/legal.css",
+    "/lang.js",
+    "/assets/index-abc123.js",
     "/robots.txt",
     "/sitemap.xml",
     "/404.html",

@@ -16,7 +16,7 @@ Use Node 22 and install dependencies with `npm ci`.
 | `npm run dev` | Start the Vite development server. |
 | `npm run build` | Type-check and build into `dist/`. |
 | `npm run preview` | Preview the built site locally. |
-| `npm test` | Test the CAPTCHA protocol and page behaviour. |
+| `npm test` | Test the CAPTCHA protocol and page, landing language and cache headers. |
 | `npm run smoke -- https://hemu.krd` | Check hosted routes, app links and headers. |
 | `npm run deploy` | Build and deploy the Firebase Hosting target. |
 
@@ -25,7 +25,7 @@ The pre-PR gate is `npm test && npm run build`, also run by CI's `build` job.
 ## Routes and app links
 
 `firebase.json` owns Hosting routes and response headers. `/listing/<id>`,
-`/u/<id>`, `/signup` and root usernames such as `/seller.one` use the SPA shell.
+`/u/<id>`, `/signup` and root usernames such as `/seller.one` serve the static landing page (`index.html`).
 `/privacy`, `/terms`, `/data-deletion`, `/support`, `/auth/captcha` and
 `/auth/callback` serve their own pages. Keep explicit rewrites ahead of `/*`,
 which must stay last; unknown deeper paths return HTTP 404.

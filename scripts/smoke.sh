@@ -20,12 +20,12 @@ done
 echo 'PASS associations: JSON and both app IDs'
 for route in /listing/x /u/x /signup /signup/verify /seller.one /seller_one /__hemu_route_smoke_missing__; do
   request "$route"
-  grep -Fq '<div id="root"></div>' "$tmp/body"
+  grep -Fq 'class="hero-grid' "$tmp/body"
 done
-echo 'PASS share links: SPA shell'
+echo 'PASS share links: landing shell'
 for route in /privacy /terms /data-deletion /support /auth/captcha /auth/callback; do
   request "$route"
-  ! grep -Fq '<div id="root"></div>' "$tmp/body" || exit 1
+  ! grep -Fq 'class="hero-grid' "$tmp/body" || exit 1
 done
 echo 'PASS site pages: own HTML'
 request /auth/captcha
