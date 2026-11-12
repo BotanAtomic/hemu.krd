@@ -62,7 +62,7 @@ test("the static first paint is the Sorani page, so index.html and the strings a
   assert(html.includes(`<title>hemû — ${t.headline}</title>`));
   for (const [lang, meta] of Object.entries(LANGS))
     assert(html.includes(`<option value="${lang}"${lang === "ckb" ? " selected" : ""}>${meta.name}</option>`), lang);
-  for (const screen of ["home", "onboarding", "account"])
+  for (const screen of ["home", "listing", "profile"])
     assert(html.includes(`src="/src/assets/screens/${screen}-ckb.webp"`), screen);
 });
 
