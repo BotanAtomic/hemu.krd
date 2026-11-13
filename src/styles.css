@@ -1,5 +1,5 @@
 :root {
-  --accent: #ff7a16;
+  --accent: #F37C20;
   --accent-soft: #ffead9;
   --ink: #171513;
   --paper: #f5f2ec;
@@ -159,7 +159,7 @@ a { color: inherit; }
 }
 [dir="rtl"] .launch-pill { letter-spacing: 0; text-transform: none; }
 .launch-pill i { font-style: normal; }
-.launch-pill span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(255,122,22,.18); }
+.launch-pill span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px rgba(243,124,32,.18); }
 
 .hero h1 {
   max-width: 720px;

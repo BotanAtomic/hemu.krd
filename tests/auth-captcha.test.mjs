@@ -726,7 +726,7 @@ test("iOS keeps all site-owned pages and static assets in the browser before the
     "/support",
     "/support/",
     "/.well-known/assetlinks.json",
-    "/og.png",
+    "/og.jpg",
     "/favicon.png",
     "/legal.css",
     "/lang.js",
