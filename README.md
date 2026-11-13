@@ -51,7 +51,8 @@ Consumer on `hemu-fd2f4`.
 
 CI deploys pushes to `main` and manual runs on `main` using Google OIDC and
 the `firebase-hosting-live` environment. Same-repository PRs get a Firebase
-preview channel and smoke check. Live deployment runs the same smoke command
+preview channel and smoke check. Both deploy the `dist` that the `build` job
+tested; they do not reinstall or rebuild. Live deployment runs the same smoke command
 against `https://hemu.krd`; local preview does not exercise Hosting configuration.
 For rollback, restore a known-good release from the Firebase console's Hosting
 release history, then run `npm run smoke -- https://hemu.krd`.
