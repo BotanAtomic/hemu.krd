@@ -102,7 +102,7 @@ export const T: Record<Lang, Strings> = {
   },
 };
 
-export const DEFAULT_LANG: Lang = 'ckb';
+const DEFAULT_LANG: Lang = 'ckb';
 
 /**
  * The language /lang.js picked before first paint (saved choice, Sorani-region
