@@ -1,6 +1,10 @@
-// Landing-page strings, copied verbatim from the app's locale bundles
-// (mobile/locales/*/common.json) so the site and the app say the same thing.
-// Only the strings the page shows are kept: it ships to cold, slow phones.
+// Landing-page strings. Only the strings the page shows are kept: it ships to
+// cold, slow phones.
+// These mirror the app's locale bundles (mobile/locales/*/common.json) exactly,
+// and the app wording is canonical: headline (onboarding.headline),
+// subheadline (onboarding.subheadline), languageLabel (onboarding.language)
+// and each LANGS name (onboarding.langX in that language's own bundle).
+// Every other string is site-only and has no app key.
 // The Sorani strings are also written into index.html (the static first
 // paint); tests/landing.test.mjs keeps the two in sync.
 
@@ -9,7 +13,7 @@ export type Lang = 'ckb' | 'ku' | 'en' | 'ar' | 'tr' | 'fa';
 export interface LangMeta {
   /** BCP-47 tag for <html lang> */
   tag: string;
-  /** Own-language display name (app: onboarding.langX) */
+  /** Own-language display name; mirrors onboarding.langX in that language's own app bundle */
   name: string;
   dir: 'ltr' | 'rtl';
 }
@@ -47,8 +51,8 @@ export const T: Record<Lang, Strings> = {
     madeFor: 'Made for Kurdistan',
   },
   ckb: {
-    headline: 'هەموو شتێک، لە نزیکتەوە',
-    subheadline: 'کڕین و فرۆشتن لە سەرتاسەری کوردستان — لە هەولێرەوە بۆ ئامەد.',
+    headline: 'هەموو شتێک، لە نزیکەوە',
+    subheadline: 'بکڕە و بفرۆشە لە سەرانسەری کوردستان — لە هەولێر تا ئامەد.',
     comingSoon: 'بەم زووانە',
     downloadHint: 'ئەپی hemû بەم زووانە بۆ iPhone و Android دێت.',
     feature: { title: 'لە یەک خولەکدا بڵاوی بکەرەوە', body: 'چەند وێنەیەک بگرە، نرخەکەت دابنێ، ئیتر ئیعلانەکەت لە سەرتاسەری کوردستان دەبینرێت.' },
@@ -68,7 +72,7 @@ export const T: Record<Lang, Strings> = {
   },
   ar: {
     headline: 'كل شيء، بالقرب منك',
-    subheadline: 'بع واشترِ في كل كردستان — من هولێر إلى آمد.',
+    subheadline: 'بع واشترِ في كل كردستان — من Hewlêr إلى Amed.',
     comingSoon: 'قريبًا',
     downloadHint: 'تطبيق hemû قادم قريبًا إلى iPhone وAndroid.',
     feature: { title: 'انشر في دقيقة', body: 'التقط بعض الصور، حدّد سعرك، وسيصل إعلانك إلى كل كردستان.' },
@@ -88,7 +92,7 @@ export const T: Record<Lang, Strings> = {
   },
   fa: {
     headline: 'همه‌چیز، نزدیک تو',
-    subheadline: 'خرید و فروش در سراسر کردستان — از هولێر تا آمد.',
+    subheadline: 'خرید و فروش در سراسر کردستان — از Hewlêr تا Amed.',
     comingSoon: 'به‌زودی',
     downloadHint: 'اپلیکیشن hemû به‌زودی برای iPhone و Android عرضه می‌شود.',
     feature: { title: 'در یک دقیقه آگهی بگذار', body: 'چند عکس بگیر، قیمتت را تعیین کن و آگهی‌ات در سراسر کردستان دیده می‌شود.' },

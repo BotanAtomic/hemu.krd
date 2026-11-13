@@ -20,7 +20,7 @@
           { "/": "/auth/callback", "exclude": true },
           { "/": "/auth/callback/*", "exclude": true },
           { "/": "/.well-known/*", "exclude": true },
-          { "/": "/og.png", "exclude": true },
+          { "/": "/og.jpg", "exclude": true },
           { "/": "/favicon.png", "exclude": true },
           { "/": "/legal.css", "exclude": true },
           { "/": "/lang.js", "exclude": true },

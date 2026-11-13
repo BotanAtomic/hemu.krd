@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 import { LANGS, T } from "../src/translations.ts";
@@ -66,6 +66,23 @@ test("the static first paint is the Sorani page, so index.html and the strings a
     assert(html.includes(`src="/src/assets/screens/${screen}-ckb.webp"`), screen);
 });
 
+test("the headline and subheadline say exactly what the app says (mobile onboarding.*)", () => {
+  // Copied from mobile/locales/*/common.json; the app wording is canonical.
+  const app = {
+    en: ["Everything, near you", "Buy and sell across Kurdistan — from Hewlêr to Amed."],
+    ckb: ["هەموو شتێک، لە نزیکەوە", "بکڕە و بفرۆشە لە سەرانسەری کوردستان — لە هەولێر تا ئامەد."],
+    ku: ["Her tişt, li nêzîkî te", "Li seranserê Kurdistanê bikire û bifiroşe — ji Hewlêrê heta Amedê."],
+    ar: ["كل شيء، بالقرب منك", "بع واشترِ في كل كردستان — من Hewlêr إلى Amed."],
+    tr: ["Her şey, yanı başında", "Kürdistan'ın her yerinde al, sat — Hewlêr'den Amed'e."],
+    fa: ["همه\u200cچیز، نزدیک تو", "خرید و فروش در سراسر کردستان — از Hewlêr تا Amed."],
+  };
+  assert.deepEqual(Object.keys(app).sort(), Object.keys(T).sort());
+  for (const [lang, [headline, subheadline]] of Object.entries(app)) {
+    assert.equal(T[lang].headline, headline, lang);
+    assert.equal(T[lang].subheadline, subheadline, lang);
+  }
+});
+
 test("the page paints without React: language script first, hero and screenshots in the HTML", async () => {
   const html = await read("index.html");
   const head = html.slice(0, html.indexOf("</head>"));
@@ -79,6 +96,16 @@ test("the page paints without React: language script first, hero and screenshots
   assert.match(await read("src/styles.css"), /@media \(max-width: 560px\) \{\n  \.content-wide/u);
   const pkg = JSON.parse(await read("package.json"));
   assert(!pkg.dependencies, "no runtime dependencies");
+});
+
+test("the link preview image is a small 1200×630 JPEG (messengers skip large og:image files)", async () => {
+  const html = await read("index.html");
+  assert(html.includes('<meta property="og:image" content="https://hemu.krd/og.jpg" />'));
+  assert(html.includes('<meta property="og:image:type" content="image/jpeg" />'));
+  assert(html.includes('<meta property="og:image:width" content="1200" />'));
+  assert(html.includes('<meta property="og:image:height" content="630" />'));
+  const { size } = await stat(new URL("../public/og.jpg", import.meta.url));
+  assert(size < 200_000, `og.jpg is ${size} bytes`);
 });
 
 test("only content-hashed assets are immutable; HTML and the CAPTCHA page stay short-cached", async () => {
