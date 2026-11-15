@@ -16,16 +16,20 @@ Use Node 22 and install dependencies with `npm ci`.
 | `npm run dev` | Start the Vite development server. |
 | `npm run build` | Type-check and build into `dist/`. |
 | `npm run preview` | Preview the built site locally. |
-| `npm test` | Test the CAPTCHA protocol and page, landing language and cache headers. |
+| `npm test` | Test the CAPTCHA protocol and page, landing language, cache headers and link previews. |
 | `npm run smoke -- https://hemu.krd` | Check hosted routes, app links and headers. |
-| `npm run deploy` | Build and deploy the Firebase Hosting target. |
+| `npm run deploy` | Build and deploy the Firebase Hosting target (not the preview function). |
 
 The pre-PR gate is `npm test && npm run build`, also run by CI's `build` job.
 
 ## Routes and app links
 
 `firebase.json` owns Hosting routes and response headers. `/listing/<id>`,
-`/u/<id>`, `/signup` and root usernames such as `/seller.one` serve the static landing page (`index.html`).
+`/u/<id>`, `/signup` and root usernames such as `/seller.one` serve the landing page (`index.html`).
+For well-formed listing ids, profile ids and usernames, the Firebase function
+`sharepreview` serves that page with the item's own link-preview tags. See
+[Link previews](docs/share-previews.md) for its configuration, local testing,
+deployment (Blaze plan) and cost.
 `/privacy`, `/terms`, `/data-deletion`, `/support`, `/auth/captcha` and
 `/auth/callback` serve their own pages. Keep explicit rewrites ahead of `/*`,
 which must stay last; unknown deeper paths return HTTP 404.
