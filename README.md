@@ -27,7 +27,9 @@ The pre-PR gate is `npm test && npm run build`, also run by CI's `build` job.
 `firebase.json` owns Hosting routes and response headers. `/listing/<id>`,
 `/u/<id>`, `/signup` and root usernames such as `/seller.one` serve the landing page (`index.html`).
 For well-formed listing ids, profile ids and usernames, the Firebase function
-`sharepreview` serves that page with the item's own link-preview tags. See
+`sharepreview` serves that page with the item's own link-preview tags. It asks
+the production API first and falls back to staging (`HEMU_BACKENDS` in
+`functions/.env`), so nothing changes at public launch. See
 [Link previews](docs/share-previews.md) for its configuration, local testing,
 deployment (Blaze plan) and cost.
 `/privacy`, `/terms`, `/data-deletion`, `/support`, `/auth/captcha` and

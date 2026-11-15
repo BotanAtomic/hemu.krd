@@ -11,14 +11,32 @@
 /** Backends the function may call. Fixed; never derived from a request. */
 export const BACKENDS = Object.freeze({
   staging: Object.freeze({
+    name: "staging",
     apiUrl: "https://vtuvotfgjhpkygrzxlom.supabase.co/functions/v1/api",
     region: "eu-west-1",
   }),
   production: Object.freeze({
+    name: "production",
     apiUrl: "https://spfwebddkaxvqslyxvln.supabase.co/functions/v1/api",
     region: "eu-central-1",
   }),
 });
+
+/**
+ * HEMU_BACKENDS: comma-separated backend names in lookup order, e.g.
+ * "production,staging". Returns the entries of the fixed BACKENDS table, so a
+ * URL can never come from configuration. Unset means "production,staging";
+ * an empty value, an empty item, a duplicate or an unknown name throws.
+ */
+export function parseBackends(value) {
+  const names = (value ?? "production,staging").split(",").map((name) => name.trim());
+  if (names.some((name) => !name)) throw new Error(`HEMU_BACKENDS must list backend names from: ${Object.keys(BACKENDS).join(", ")}`);
+  if (new Set(names).size !== names.length) throw new Error("HEMU_BACKENDS must not repeat a backend");
+  return names.map((name) => {
+    if (!Object.hasOwn(BACKENDS, name)) throw new Error(`HEMU_BACKENDS: unknown backend "${name}"; use ${Object.keys(BACKENDS).join(", ")}`);
+    return BACKENDS[name];
+  });
+}
 
 export const SITE_ORIGIN = "https://hemu.krd";
 export const GENERIC_IMAGE = Object.freeze({
@@ -46,6 +64,8 @@ export const SECURITY_HEADERS = Object.freeze({
  * busy link stay off the backend; a definite "nothing to show" is cached
  * briefly so a newly visible item soon gets its card; a backend error or
  * timeout is cached for seconds only, enough to absorb a burst of crawlers.
+ * Any error on the way to the answer (even when a later backend answered)
+ * makes the whole response use the short `error` lifetime.
  */
 export const CACHE = Object.freeze({
   found: "public, max-age=300, s-maxage=600",
@@ -54,6 +74,7 @@ export const CACHE = Object.freeze({
   unavailable: "no-store",
 });
 
+/** Per backend. Backends are asked one after another, so the worst case is this times the number of backends (2 today: 5 s). */
 export const API_TIMEOUT_MS = 2500;
 const INDEX_TIMEOUT_MS = 2000;
 const INDEX_TTL_MS = 300_000;
@@ -473,7 +494,8 @@ export async function fetchPublic(backend, path, fetchImpl = fetch, timeoutMs = 
       }
       return { status: "notFound", code };
     }
-    return { status: response.status >= 400 && response.status < 500 ? "notFound" : "error", code: "HTTP" };
+    // Rate limiting is transient, not an answer about the item.
+    return { status: response.status >= 400 && response.status < 500 && response.status !== 429 ? "notFound" : "error", code: "HTTP" };
   } catch {
     return { status: "error" };
   }
@@ -506,30 +528,57 @@ export function createIndexSource(fetchImpl = fetch, now = Date.now) {
   };
 }
 
-/** Resolve a route to {card, cache, outcome, id}. Never throws. */
-export async function resolveCard(route, backend, fetchImpl = fetch, labels = LABELS.en) {
-  if (!route) return { card: null, cache: CACHE.notFound, outcome: "invalid" };
+/** One backend's answer: {state:"found"|"notFound"|"error", card?, outcome, id?}. Never throws. */
+async function lookup(route, backend, path, fetchImpl, labels) {
+  const result = await fetchPublic(backend, path, fetchImpl);
+  const logId = route.id ?? null;
+  if (result.status === "error") return { state: "error" };
+  if (result.status === "notFound") {
+    // A sold listing is a definitive answer, not "try the next backend".
+    if (route.kind === "listing" && result.code === "LISTING_SOLD") {
+      return { state: "found", card: soldCard(route, labels), outcome: "sold", id: logId };
+    }
+    return { state: "notFound", outcome: "notFound" };
+  }
+  const card = route.kind === "listing"
+    ? listingCard(result.body, route, backend.apiUrl, labels)
+    : profileCard(result.body, route, backend.apiUrl, labels);
+  if (!card) return { state: "notFound", outcome: "hidden" };
+  const id = route.kind === "username" ? String(result.body.id).toLowerCase() : logId;
+  const outcome = route.kind === "listing" && result.body.status === "sold" ? "sold" : "found";
+  return { state: "found", card, outcome, id };
+}
+
+/**
+ * Resolve a route to {card, cache, outcome, id, backend}. `backends` are asked
+ * in order, one at a time; the first that finds the item wins. A not-found
+ * moves on, and so does an error, but an error on the way makes the cache
+ * lifetime short (the item may exist where we could not look). Never throws.
+ */
+export async function resolveCard(route, backends, fetchImpl = fetch, labels = LABELS.en) {
+  if (!route) return { card: null, cache: CACHE.notFound, outcome: "invalid", backend: null };
   const path = route.kind === "listing"
     ? `/listings/${encodeURIComponent(route.id)}`
     : route.kind === "profile"
       ? `/users/${encodeURIComponent(route.id)}`
       : `/users/by-username/${encodeURIComponent(route.username)}`;
-  const result = await fetchPublic(backend, path, fetchImpl);
-  const logId = route.id ?? null;
-  if (result.status === "error") return { card: null, cache: CACHE.error, outcome: "error", id: logId };
-  if (result.status === "notFound") {
-    if (route.kind === "listing" && result.code === "LISTING_SOLD") {
-      return { card: soldCard(route, labels), cache: CACHE.found, outcome: "sold", id: logId };
+  let sawError = false;
+  let sawHidden = false;
+  for (const backend of backends) {
+    const answer = await lookup(route, backend, path, fetchImpl, labels);
+    if (answer.state === "found") {
+      return { card: answer.card, cache: sawError ? CACHE.error : CACHE.found, outcome: answer.outcome, id: answer.id, backend: backend.name };
     }
-    return { card: null, cache: CACHE.notFound, outcome: "notFound", id: logId };
+    if (answer.state === "error") sawError = true;
+    else if (answer.outcome === "hidden") sawHidden = true;
   }
-  const card = route.kind === "listing"
-    ? listingCard(result.body, route, backend.apiUrl, labels)
-    : profileCard(result.body, route, backend.apiUrl, labels);
-  if (!card) return { card: null, cache: CACHE.notFound, outcome: "hidden", id: logId };
-  const id = route.kind === "username" ? String(result.body.id).toLowerCase() : logId;
-  const outcome = route.kind === "listing" && result.body.status === "sold" ? "sold" : "found";
-  return { card, cache: CACHE.found, outcome, id };
+  return {
+    card: null,
+    cache: sawError ? CACHE.error : CACHE.notFound,
+    outcome: sawError ? "error" : sawHidden ? "hidden" : "notFound",
+    id: route.id ?? null,
+    backend: null,
+  };
 }
 
 /**
@@ -538,8 +587,11 @@ export async function resolveCard(route, backend, fetchImpl = fetch, labels = LA
  * host (matched against this site's own hosts), sets no cookies, and never
  * answers 5xx.
  */
-export function createHandler({ backend, fetchImpl = fetch, indexSource = createIndexSource(fetchImpl), log = console.log } = {}) {
-  if (!backend || !Object.values(BACKENDS).includes(backend)) throw new Error("unknown backend");
+export function createHandler({ backends, fetchImpl = fetch, indexSource = createIndexSource(fetchImpl), log = console.log } = {}) {
+  const known = Object.values(BACKENDS);
+  if (!Array.isArray(backends) || backends.length === 0 || !backends.every((backend) => known.includes(backend))) {
+    throw new Error("unknown backend");
+  }
   return async function handle(req, res) {
     const send = (status, cacheControl, body, extra = {}) => {
       res.statusCode = status;
@@ -563,8 +615,8 @@ export function createHandler({ backend, fetchImpl = fetch, indexSource = create
       }
       const forwarded = String(req.headers?.["x-forwarded-host"] ?? "").split(",")[0].trim().toLowerCase();
       const route = routeFor(path);
-      const [html, resolved] = await Promise.all([indexSource(forwarded), resolveCard(route, backend, fetchImpl)]);
-      log(JSON.stringify({ preview: route?.kind ?? "none", outcome: resolved.outcome, id: resolved.id ?? null }));
+      const [html, resolved] = await Promise.all([indexSource(forwarded), resolveCard(route, backends, fetchImpl)]);
+      log(JSON.stringify({ preview: route?.kind ?? "none", outcome: resolved.outcome, id: resolved.id ?? null, backend: resolved.backend }));
       if (html === null) {
         send(200, CACHE.unavailable, UNAVAILABLE_PAGE);
         return;

@@ -7,11 +7,13 @@ import {
   RESERVED_USERNAMES,
   SECURITY_HEADERS,
   UNAVAILABLE_PAGE,
+  API_TIMEOUT_MS,
   applyCard,
   compactUuid,
   createHandler,
   createIndexSource,
   formatPrice,
+  parseBackends,
   publicImageUrl,
   routeFor,
   truncate,
@@ -20,8 +22,11 @@ import {
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 const INDEX = await read("index.html");
+const envText = await read("functions/.env");
 const backend = BACKENDS.staging;
 const API = backend.apiUrl;
+const PROD_API = BACKENDS.production.apiUrl;
+const PROD_STORAGE = "https://spfwebddkaxvqslyxvln.supabase.co/storage/v1/render/image/public";
 const STORAGE = "https://vtuvotfgjhpkygrzxlom.supabase.co/storage/v1/render/image/public";
 const LRI = String.fromCodePoint(0x2066);
 const PDI = String.fromCodePoint(0x2069);
@@ -65,13 +70,14 @@ const profile = (overrides = {}) => ({
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-/** A fake backend: routes API paths to responses and records every call. */
-function fakeFetch(routes) {
+/** Fake backends: `routes` answer staging, `prodRoutes` production; every call is recorded. */
+function fakeFetch(routes, prodRoutes = {}) {
   const calls = [];
   const impl = async (url, init) => {
     calls.push({ url: String(url), init });
     if (String(url) === "https://hemu.krd/index.html") return new Response(INDEX, { status: 200 });
-    const route = routes[String(url).slice(API.length)];
+    const prod = String(url).startsWith(PROD_API);
+    const route = (prod ? prodRoutes : routes)[String(url).slice((prod ? PROD_API : API).length)];
     if (!route) return json(404, { code: "NOT_FOUND" });
     return typeof route === "function" ? route(init) : route.clone();
   };
@@ -79,8 +85,8 @@ function fakeFetch(routes) {
   return impl;
 }
 
-async function request(fetchImpl, path, { method = "GET", host = "hemu.krd" } = {}) {
-  const handler = createHandler({ backend, fetchImpl, log: () => {} });
+async function request(fetchImpl, path, { method = "GET", host = "hemu.krd", backends = [backend], log = () => {} } = {}) {
+  const handler = createHandler({ backends, fetchImpl, log });
   const res = {
     statusCode: 0, headers: {}, body: undefined, headersSent: false,
     setHeader(key, value) { this.headers[key.toLowerCase()] = value; },
@@ -268,7 +274,8 @@ test("anything not found, hidden or failing serves the page unchanged with HTTP 
     ["blocked/hidden payload", json(200, listing({ status: "hidden" })), CACHE.notFound],
     ["wrong id", json(200, listing({ id: SELLER_ID })), CACHE.notFound],
     ["server error", json(500, { code: "INTERNAL_ERROR" }), CACHE.error],
-    ["rate limited", json(429, { code: "RATE_LIMITED" }), CACHE.notFound],
+    ["rate limited", json(429, { code: "RATE_LIMITED" }), CACHE.error],
+    ["bad request", json(400, { code: "VALIDATION_ERROR" }), CACHE.notFound],
     ["not JSON", new Response("<html>", { status: 200 }), CACHE.error],
     ["too large", new Response("x".repeat(300 * 1024), { status: 200 }), CACHE.error],
     ["network failure", () => Promise.reject(new TypeError("fetch failed")), CACHE.error],
@@ -349,26 +356,162 @@ test("index.html comes from this site's own Hosting only, and a failed read degr
   now = 10 * 60_000;
   assert.equal(await source("hemu.krd"), INDEX, "stale copy when Hosting cannot be read");
 
-  const handler = createHandler({ backend, fetchImpl: fakeFetch({}), indexSource: async () => null, log: () => {} });
+  const handler = createHandler({ backends: [backend], fetchImpl: fakeFetch({}), indexSource: async () => null, log: () => {} });
   const res = { headers: {}, setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, end(b) { this.body = String(b ?? ""); } };
   await handler({ method: "GET", url: "/seller.one", headers: {} }, res);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body, UNAVAILABLE_PAGE);
   assert.equal(res.headers["cache-control"], "no-store");
-  assert.throws(() => createHandler({ backend: { apiUrl: "https://evil.example", region: "x" } }));
+  assert.throws(() => createHandler({ backends: [] }));
+  assert.throws(() => createHandler({ backends: [{ name: "evil", apiUrl: "https://evil.example", region: "x" }] }));
 });
 
 test("logs carry the outcome and an id only", async () => {
   const lines = [];
-  const handler = createHandler({ backend, fetchImpl: fakeFetch({ "/users/by-username/rebaz.hewrami": json(200, profile()) }), log: (line) => lines.push(line) });
+  const handler = createHandler({ backends: [backend], fetchImpl: fakeFetch({ "/users/by-username/rebaz.hewrami": json(200, profile()) }), log: (line) => lines.push(line) });
   const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, end() {} };
   await handler({ method: "GET", url: "/rebaz.hewrami", headers: {} }, res);
   await handler({ method: "GET", url: "/nobody.here", headers: {} }, res);
   assert.deepEqual(lines.map((line) => JSON.parse(line)), [
-    { preview: "username", outcome: "found", id: SELLER_ID },
-    { preview: "username", outcome: "notFound", id: null },
+    { preview: "username", outcome: "found", id: SELLER_ID, backend: "staging" },
+    { preview: "username", outcome: "notFound", id: null, backend: null },
   ]);
   assert(!lines.join("").includes("rebaz") && !lines.join("").includes("nobody"));
+});
+
+// --- Production first, staging as fallback -----------------------------------
+
+const BOTH = [BACKENDS.production, BACKENDS.staging];
+const prodCalls = (fetchImpl) => fetchImpl.calls.filter(({ url }) => url.startsWith(PROD_API));
+const stagingCalls = (fetchImpl) => fetchImpl.calls.filter(({ url }) => url.startsWith(API));
+const never = (init) => new Promise((_, reject) => {
+  const keepAlive = setTimeout(() => {}, 10_000);
+  init.signal.addEventListener("abort", () => { clearTimeout(keepAlive); reject(init.signal.reason); });
+});
+const lookupPath = `/listings/${LISTING_ID}`;
+const prodListing = listing({ title: "From production", images: [{ ...listing().images[1], fullUrl: `${PROD_STORAGE}/listing-media/p/full.jpg?width=720&height=720&resize=contain` }] });
+
+test("found in production: staging is never called, long cache, backend logged", async () => {
+  const lines = [];
+  const fetchImpl = fakeFetch({ [lookupPath]: json(200, listing()) }, { [lookupPath]: json(200, prodListing) });
+  const res = await request(fetchImpl, LISTING_PATH, { backends: BOTH, log: (line) => lines.push(line) });
+  assert.equal(title(res.body), `From production · ${ltr("$18,500")}`);
+  assert.equal(res.headers["cache-control"], CACHE.found);
+  assert.equal(prodCalls(fetchImpl).length, 1);
+  assert.equal(prodCalls(fetchImpl)[0].init.headers["x-region"], "eu-central-1");
+  assert.equal(stagingCalls(fetchImpl).length, 0);
+  assert.deepEqual(JSON.parse(lines[0]), { preview: "listing", outcome: "found", id: LISTING_ID, backend: "production" });
+  // The image comes from production's own storage.
+  assert(tag(res.body, "og:image").startsWith(PROD_STORAGE));
+});
+
+test("clean not-found in production falls back to staging with the long cache", async () => {
+  for (const missing of [json(404, { code: "NOT_FOUND" }), json(200, listing({ status: "hidden" }))]) {
+    const lines = [];
+    const fetchImpl = fakeFetch({ [lookupPath]: json(200, listing()) }, { [lookupPath]: missing });
+    const res = await request(fetchImpl, LISTING_PATH, { backends: BOTH, log: (line) => lines.push(line) });
+    assert.equal(title(res.body), `Toyota Corolla 2022, one owner · ${ltr("$18,500")}`);
+    assert.equal(res.headers["cache-control"], CACHE.found);
+    assert.equal(prodCalls(fetchImpl).length, 1);
+    assert.equal(stagingCalls(fetchImpl).length, 1);
+    assert.equal(JSON.parse(lines[0]).backend, "staging");
+    assert(tag(res.body, "og:image").startsWith(STORAGE));
+  }
+});
+
+test("a production error or timeout still tries staging, and any answer then carries the short cache", async () => {
+  const failures = [
+    json(500, { code: "INTERNAL_ERROR" }),
+    json(429, { code: "RATE_LIMITED" }),
+    new Response("<html>", { status: 200 }),
+    new Response("x".repeat(300 * 1024), { status: 200 }),
+    () => Promise.reject(new TypeError("fetch failed")),
+    never,
+  ];
+  for (const failure of failures) {
+    const found = await request(fakeFetch({ [lookupPath]: json(200, listing()) }, { [lookupPath]: failure }), LISTING_PATH, { backends: BOTH });
+    assert.equal(title(found.body), `Toyota Corolla 2022, one owner · ${ltr("$18,500")}`);
+    assert.equal(found.headers["cache-control"], CACHE.error);
+    // Nothing anywhere after an error: generic page, short cache.
+    const nowhere = await request(fakeFetch({}, { [lookupPath]: failure }), LISTING_PATH, { backends: BOTH });
+    assert.equal(nowhere.body, INDEX);
+    assert.equal(nowhere.headers["cache-control"], CACHE.error);
+  }
+  // Staging failing after a clean production miss is also an error.
+  const stagingDown = await request(fakeFetch({ [lookupPath]: json(500, {}) }), LISTING_PATH, { backends: BOTH });
+  assert.equal(stagingDown.headers["cache-control"], CACHE.error);
+});
+
+test("not found in every backend serves the generic page with the not-found cache", async () => {
+  const lines = [];
+  const fetchImpl = fakeFetch({}, {});
+  const res = await request(fetchImpl, LISTING_PATH, { backends: BOTH, log: (line) => lines.push(line) });
+  assert.equal(res.body, INDEX);
+  assert.equal(res.headers["cache-control"], CACHE.notFound);
+  assert.equal(prodCalls(fetchImpl).length + stagingCalls(fetchImpl).length, 2);
+  assert.deepEqual(JSON.parse(lines[0]), { preview: "listing", outcome: "notFound", id: LISTING_ID, backend: null });
+});
+
+test("sold in production is final: sold card, long cache, staging not called", async () => {
+  const fetchImpl = fakeFetch({ [lookupPath]: json(200, listing()) }, { [lookupPath]: json(404, { code: "LISTING_SOLD" }) });
+  const res = await request(fetchImpl, LISTING_PATH, { backends: BOTH });
+  assert.equal(title(res.body), "Sold on hemû");
+  assert.equal(res.headers["cache-control"], CACHE.found);
+  assert.equal(stagingCalls(fetchImpl).length, 0);
+  // Sold only in staging, after a clean production miss, is a sold card too.
+  const later = await request(fakeFetch({ [lookupPath]: json(404, { code: "LISTING_SOLD" }) }), LISTING_PATH, { backends: BOTH });
+  assert.equal(title(later.body), "Sold on hemû");
+  assert.equal(later.headers["cache-control"], CACHE.found);
+});
+
+test("profiles and usernames: production first, the same username in both gives production", async () => {
+  const both = fakeFetch(
+    { "/users/by-username/rebaz.hewrami": json(200, profile({ name: "Staging Rebaz" })) },
+    { "/users/by-username/rebaz.hewrami": json(200, profile({ name: "Production Rebaz" })) },
+  );
+  const res = await request(both, "/rebaz.hewrami", { backends: BOTH });
+  assert.equal(title(res.body), "Production Rebaz on hemû");
+  assert.equal(stagingCalls(both).length, 0);
+  const onlyStaging = await request(fakeFetch({ "/users/by-username/rebaz.hewrami": json(200, profile()) }), "/rebaz.hewrami", { backends: BOTH });
+  assert.equal(title(onlyStaging.body), "Rêbaz Hewramî on hemû");
+  assert.equal(onlyStaging.headers["cache-control"], CACHE.found);
+  const byId = await request(fakeFetch({ [`/users/${SELLER_ID}`]: json(200, profile()) }), `/u/${compactUuid(SELLER_ID)}`, { backends: BOTH });
+  assert.equal(title(byId.body), "Rêbaz Hewramî on hemû");
+});
+
+test("each backend only accepts images from its own public storage", () => {
+  const stagingImage = `${STORAGE}/a.jpg?width=720`;
+  const prodImage = `${PROD_STORAGE}/a.jpg?width=720`;
+  assert.equal(publicImageUrl(prodImage, PROD_API), prodImage);
+  assert.equal(publicImageUrl(stagingImage, API), stagingImage);
+  assert.equal(publicImageUrl(stagingImage, PROD_API), null);
+  assert.equal(publicImageUrl(prodImage, API), null);
+});
+
+test("a production payload cannot carry a staging image into its card", async () => {
+  const fetchImpl = fakeFetch({}, { [lookupPath]: json(200, listing()) });
+  const res = await request(fetchImpl, LISTING_PATH, { backends: BOTH });
+  assert.equal(tag(res.body, "og:image"), "https://hemu.krd/og.jpg");
+});
+
+test("HEMU_BACKENDS: ordered list, a single name, and startup failures", () => {
+  assert.deepEqual(parseBackends("production,staging"), [BACKENDS.production, BACKENDS.staging]);
+  assert.deepEqual(parseBackends(" staging , production "), [BACKENDS.staging, BACKENDS.production]);
+  assert.deepEqual(parseBackends("production"), [BACKENDS.production]);
+  assert.deepEqual(parseBackends(undefined), [BACKENDS.production, BACKENDS.staging]);
+  for (const bad of ["", " ", "prod", "production,", ",staging", "production,production", "production,old", "https://evil.example", "toString", "__proto__"]) {
+    assert.throws(() => parseBackends(bad), Error, JSON.stringify(bad));
+  }
+  assert.match(envText, /^HEMU_BACKENDS=production,staging$/mu);
+});
+
+test("two timing-out backends stay inside the time budget", async () => {
+  const started = Date.now();
+  const res = await request(fakeFetch({ [lookupPath]: never }, { [lookupPath]: never }), LISTING_PATH, { backends: BOTH });
+  const elapsed = Date.now() - started;
+  assert.equal(res.body, INDEX);
+  assert.equal(res.headers["cache-control"], CACHE.error);
+  assert(elapsed >= API_TIMEOUT_MS * 2 - 100 && elapsed < 5500, `${elapsed} ms`);
 });
 
 // --- Hosting routing -------------------------------------------------------
