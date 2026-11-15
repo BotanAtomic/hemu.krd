@@ -112,6 +112,14 @@
         "destination": "/auth/callback/index.html"
       },
       {
+        "regex": "^/listing/(?:[A-Za-z0-9_-]{22}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$",
+        "run": { "serviceId": "sharepreview", "region": "europe-west1" }
+      },
+      {
+        "regex": "^/u/(?:[A-Za-z0-9_-]{22}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$",
+        "run": { "serviceId": "sharepreview", "region": "europe-west1" }
+      },
+      {
         "source": "/listing/**",
         "destination": "/index.html"
       },
@@ -128,10 +136,22 @@
         "destination": "/index.html"
       },
       {
+        "regex": "^/[A-Za-z0-9][A-Za-z0-9._]{1,18}[A-Za-z0-9]$",
+        "run": { "serviceId": "sharepreview", "region": "europe-west1" }
+      },
+      {
         "source": "/*",
         "destination": "/index.html"
       }
     ],
     "trailingSlash": false
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", "*.local", ".git", "firebase-debug.log", "firebase-debug.*.log"]
+    }
+  ]
 }
