@@ -65,7 +65,7 @@ export const T: Record<Lang, Strings> = {
     subheadline: 'Li seranserê Kurdistanê bikire û bifiroşe — ji Hewlêrê heta Amedê.',
     comingSoon: 'Di demeke nêz de',
     downloadHint: 'Sepana hemû di demeke nêz de ji bo iPhone û Androidê tê.',
-    feature: { title: 'Di deqeyekê de biweşîne', body: 'Çend wêneyan bikişîne, bihayê xwe deyne û êdî îlana te li seranserê Kurdistanê tê dîtin.' },
+    feature: { title: 'Di deqeyekê de biweşîne', body: 'Çend wêneyan bikişîne, bihayê xwe deyne û êdî reklama te li seranserê Kurdistanê tê dîtin.' },
     languageLabel: 'Ziman',
     contact: 'Têkilî',
     madeFor: 'Ji bo Kurdistanê hatiye çêkirin',
