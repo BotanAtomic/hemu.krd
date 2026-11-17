@@ -18,6 +18,7 @@ for route in /.well-known/apple-app-site-association /.well-known/assetlinks.jso
   for app in krd.hemu.app krd.hemu.app.staging; do grep -Fq "$app\"" "$tmp/body"; done
 done
 echo 'PASS associations: JSON and both app IDs'
+request /.well-known/security.txt 200 text/plain
 for route in /listing/x /u/x /signup /signup/verify /seller.one /seller_one /__hemu_route_smoke_missing__; do
   request "$route"
   grep -Fq 'class="hero-grid' "$tmp/body"
