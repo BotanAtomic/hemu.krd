@@ -3,6 +3,26 @@
 Read `README.md` first. This file states the norms the code already follows.
 Where a rule is machine-enforced the check is named; the rest is review.
 
+## Owner's standing rules
+
+These apply to every agent, whatever tool it runs in. They are the owner's decisions; change one only when he says so.
+
+- Finish in-flight pull requests before starting new work. No large parallel preparation for a new request.
+- Just code, then check on a device only what the change could break. The owner does the rest of the QA and confirms tester builds himself.
+- Report outcomes as they are: what was verified, what was not, and what failed. Never weaken a check to get green.
+- Ask in chat before each production deploy. Production configuration, security settings and secrets changes need the owner's yes.
+- Store-console forms (Google Play, App Store Connect) are filled without per-step approval: decide from what the app and its docs establish, then report. Never type a password, one-time code or reviewer code, never accept an agreement, never upload identity documents; the owner does those.
+- Never print or persist a secret, token or signed URL. Secrets are read only through the repository wrappers or private files with mode 600.
+- Kurdish copy uses Kurdish words, not Arabic loanwords: a listing is «ڕیکلام» in Soranî and "reklam" in Kurmancî, everywhere (app, notifications, website, store pages). Soranî text uses Soranî digits. Turkish and Arabic keep their own words.
+- Never mention AI in the app or its store pages, and never write a privacy statement that is not true.
+- Every visible app change is also made in the "hemû - app" design project, so the design stays the reference.
+- Chat must behave like a good messaging app. Do not offer a blunt workaround (a global cache wipe, a forced reload) as a fix.
+- Keep `hemu.krd` minimal; show a rough version early.
+- Staging and production share one version number. Raise it only in a pull request whose result will be released; quick test builds keep the number. Tag `staging-<version>-<build>` only after the owner confirms the build.
+- The release JavaScript bundle cap (11 MiB) is raised only by the owner.
+- While GitHub Actions is unavailable, the merge gate is the full local gate (`npm run ci:local -- <sha>`) on the PR head, noted in the PR. Merge with `--squash --match-head-commit`; never `--admin`, never auto-merge.
+- The apps are in the stores: ship backend additions before the app needs them and remove from the backend only after the app stopped using it.
+
 ## How to work
 
 - Keep the site minimal. It is a sparse landing page that ships to slow
