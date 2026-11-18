@@ -39,6 +39,11 @@ These apply to every agent, whatever tool it runs in. They are the owner's decis
 - The landing page is `index.html`, `src/main.ts` (plain DOM code),
   `src/translations.ts` and `src/styles.css` (plain CSS with custom
   properties on `:root`).
+- The page is one pinned phone that steps through eight app screens. The
+  screens are `src/assets/screens/<screen>-<language>.webp`; `src/pieces.ts`
+  lists, per language, the elements that lift off each screen. Both are
+  generated from the app's store screenshots: regenerate them together, never
+  edit one by hand.
 - Static pages (`privacy`, `terms`, `data-deletion`, `support`,
   `auth/captcha`, `auth/callback`, `.well-known`) are hand-written under
   `public/`.

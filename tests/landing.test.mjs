@@ -54,16 +54,30 @@ test("the static first paint is the Sorani page, so index.html and the strings a
   assert.equal(text("subheadline"), t.subheadline);
   assert.equal(text("comingSoon"), t.comingSoon);
   assert.equal(text("downloadHint"), t.downloadHint);
-  assert.equal(text("featureTitle"), t.feature.title);
-  assert.equal(text("featureBody"), t.feature.body);
-  assert.equal(text("madeFor"), t.madeFor);
   assert.equal(text("languageLabel"), t.languageLabel);
   assert.equal(text("contact"), t.contact);
   assert(html.includes(`<title>hemû — ${t.headline}</title>`));
   for (const [lang, meta] of Object.entries(LANGS))
     assert(html.includes(`<option value="${lang}"${lang === "ckb" ? " selected" : ""}>${meta.name}</option>`), lang);
-  for (const screen of ["home", "listing", "profile"])
-    assert(html.includes(`src="/src/assets/screens/${screen}-ckb.webp"`), screen);
+  assert(html.includes('src="/src/assets/screens/01-home-ckb.webp"'));
+});
+
+test("every language has its seven step captions, eight screens and the pieces that lift off them", async () => {
+  const { PIECES } = await import("../src/pieces.ts");
+  const screens = ["01-home", "02-sell", "03-filters", "04-offers", "05-listing", "06-alerts", "07-follow", "08-cities"];
+  for (const lang of Object.keys(LANGS)) {
+    assert.equal(T[lang].steps.length, 7, lang);
+    for (const step of T[lang].steps) assert(step.title && step.body, lang);
+    assert(T[lang].alert.title && T[lang].alert.body && T[lang].alert.time, lang);
+    assert.equal(PIECES[lang].length, screens.length, lang);
+    for (const screen of screens) {
+      const { size } = await stat(new URL(`../src/assets/screens/${screen}-${lang}.webp`, import.meta.url));
+      assert(size > 10_000 && size < 260_000, `${screen}-${lang}.webp is ${size} bytes`);
+    }
+  }
+  // A listing is «ڕیکلام» in Sorani and "reklam" in Kurmanci, never the Arabic loanword.
+  assert(!/ئیعلان/u.test(JSON.stringify(T.ckb)));
+  assert(/reklam/u.test(JSON.stringify(T.ku)));
 });
 
 test("the headline and subheadline say exactly what the app says (mobile onboarding.*)", () => {
@@ -83,17 +97,18 @@ test("the headline and subheadline say exactly what the app says (mobile onboard
   }
 });
 
-test("the page paints without React: language script first, hero and screenshots in the HTML", async () => {
+test("the page paints without a framework: language script first, headline and Home screen in the HTML", async () => {
   const html = await read("index.html");
   const head = html.slice(0, html.indexOf("</head>"));
   assert.match(head, /<script src="\/lang\.js"><\/script>/u);
   assert(!/\bdefer\b|\basync\b|type="module"/u.test(head.match(/<script src="\/lang\.js"><\/script>/u)[0]));
-  assert(html.includes('<div id="top"') || html.includes('id="top"'));
   assert(!html.includes('id="root"'));
-  assert.match(html, /<source media="\(max-width: 560px\)" srcset="\/src\/assets\/showcase\/hero-portrait\.webp"/u);
-  assert.match(html, /class="hero-landscape" src="\/src\/assets\/showcase\/hero-landscape\.webp"/u);
-  // The portrait source must follow the 560px phone breakpoint in the CSS.
-  assert.match(await read("src/styles.css"), /@media \(max-width: 560px\) \{\n  \.content-wide/u);
+  assert.match(html, /<h1 data-t="headline">[^<]+<\/h1>/u);
+  // The first screen is in the markup with its size, so the phone is drawn before the script runs.
+  assert.match(html, /<img class="bd" src="\/src\/assets\/screens\/01-home-ckb\.webp" width="780" height="1692"/u);
+  // No web fonts and nothing from another origin: the content security policy allows only this site.
+  assert(!/https?:\/\/(?!hemu\.krd)[^"']+\.(css|js|woff2?)/u.test(html));
+  assert(!/@import|url\(\s*["']?https?:/u.test(await read("src/styles.css")));
   const pkg = JSON.parse(await read("package.json"));
   assert(!pkg.dependencies, "no runtime dependencies");
 });
