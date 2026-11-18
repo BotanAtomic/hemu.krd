@@ -34,6 +34,17 @@ const STEPS: Step[] = [
 // The English city sheet starts lower than the others.
 const cutFor = (i: number, lang: Lang) => (i === 7 && lang === 'en' ? 11.7 : STEPS[i].cut);
 const N = STEPS.length;
+// The ground of each tone, as numbers so that two of them can be mixed. The first is --canvas in the style sheet,
+// which paints the page before this script runs; the second is --orange.
+const GROUND: Record<Tone, number[]> = {
+  canvas: [245, 244, 241],
+  orange: [243, 124, 32],
+  tint: [253, 238, 224],
+  night: [20, 19, 18],
+};
+// A scroll left to itself runs on for this many seconds' worth of its speed before it stops: a touch fling loses
+// 0.2 % of its speed every millisecond. The speed read in frame() runs a little late, which leaves a small margin.
+const COAST = 0.5;
 
 // The phone's pose at rest in each step: [tilt back, turn, roll (degrees), drop (% of its height), scale].
 // Narrow screens swing left and right; wide screens keep the phone turned toward the words.
@@ -48,6 +59,8 @@ const SPEC = 0.5;
 
 const root = document.documentElement;
 const $ = <E extends Element = HTMLElement>(selector: string) => document.querySelector<E>(selector)!;
+const backdrop = $('#backdrop');
+const wash = $('#wash');
 const tour = $('#tour');
 const stage = $('.stage');
 const area = $('#area');
@@ -91,6 +104,7 @@ STEPS.forEach((step, i) => {
   if (i === 0) return;
   const cap = document.createElement('section');
   cap.className = 'cap';
+  cap.dataset.tone = step.tone;
   cap.setAttribute('aria-hidden', 'true');
   cap.innerHTML = '<h2></h2><p class="body"></p>';
   captions.appendChild(cap);
@@ -186,7 +200,8 @@ interface Group {
   readyAt: number;
 }
 let groups: Group[] = [];
-let active = -1;
+let active = -1; // the step the scroll is in
+let shown = -1; // the step on show: its screen, caption and ground
 let side = 1;
 let lang: Lang = pageLang();
 function buildPieces() {
@@ -230,7 +245,7 @@ function buildPieces() {
     }
     return group;
   });
-  if (active > -1) groups[active].el.classList.add('on');
+  if (shown > -1) groups[shown].el.classList.add('on');
 }
 
 // ----- language -----
@@ -289,12 +304,40 @@ select.addEventListener('change', () => {
   kick();
 });
 
+// ----- the ground -----
+// It takes the new colour at once, under a second sheet that holds what was on screen and fades away. Only that
+// opacity moves, and the browser fades it without repainting anything.
+let tone: Tone = 'canvas';
+let held = GROUND.canvas; // the colour that is fading away
+function setTone(next: Tone, fade: boolean) {
+  if (next === tone) return;
+  if (fade) {
+    // what is on screen at this instant: the ground, with whatever is left of the one before still over it
+    const left = parseFloat(getComputedStyle(wash).opacity) || 0;
+    held = GROUND[tone].map((v, k) => Math.round(v + (held[k] - v) * left));
+    wash.style.transition = 'none';
+    wash.style.backgroundColor = `rgb(${held})`;
+    wash.style.opacity = '1';
+  }
+  tone = next;
+  stage.dataset.tone = next;
+  backdrop.style.backgroundColor = root.style.backgroundColor = `rgb(${GROUND[next]})`;
+  if (fade) {
+    void getComputedStyle(wash).opacity; // the fade starts from here
+    wash.style.transition = '';
+    wash.style.opacity = '0';
+  }
+}
+
 // ----- scroll -> step, pose, lift -----
 let start = 0;
 let range = 1;
 let cover = 1;
 let raf = 0;
 let last = 0;
+let lastY = 0;
+let speed = 0; // how fast the page is scrolling, in steps per second (down is positive)
+let eager = 0; // until when a tap on the phone lets the next step come on show at any speed
 let stepAt = -1e6;
 let intro = !reduced;
 let mx = 0;
@@ -322,33 +365,38 @@ function measure() {
 function goTo(i: number) {
   window.scrollTo({ top: Math.round(start + ((i ? i + 0.5 : 0) / N) * range), behavior: reduced ? 'auto' : 'smooth' });
 }
-function setStep(i: number, finished: boolean, now: number) {
-  if (i !== active) {
-    const previous = active;
-    if (active > -1) groups[active].el.classList.remove('on');
-    active = i;
-    groups[i].el.classList.add('on');
-    groups[i].last = -1;
-    groups[i].armed = false;
-    caps.forEach((cap, k) => {
-      cap.classList.toggle('is-active', k === i);
-      cap.classList.toggle('is-before', k < i);
-      if (k === i) cap.removeAttribute('aria-hidden');
-      else cap.setAttribute('aria-hidden', 'true');
-    });
-    // a fast scroll crosses screens quicker than they can slide: place them instead of animating a pile-up
-    const fast = Math.abs(i - previous) > 1 || now - stepAt < 320;
-    screen.classList.toggle('jump', fast);
-    shots.forEach((shot, k) => {
-      shot.classList.toggle('is-in', k <= i);
-      shot.classList.toggle('near', Math.abs(k - i) < 2);
-      shot.classList.toggle('under', k === i - 1 && STEPS[i].kind === 'push');
-    });
-    root.dataset.step = String(i);
-    stepAt = now;
-  }
-  const tone = finished ? 'orange' : STEPS[i].tone;
-  if (root.dataset.tone !== tone) root.dataset.tone = tone;
+// Puts step i on show: its caption, its screen, its lifting pieces (the ground follows in frame()).
+function show(i: number, now: number) {
+  const from = shown;
+  shown = i;
+  stepAt = now;
+  eager = 0;
+  if (from > -1) groups[from].el.classList.remove('on');
+  groups[i].el.classList.add('on');
+  groups[i].last = -1;
+  groups[i].armed = false;
+  caps.forEach((cap, k) => {
+    cap.classList.toggle('is-active', k === i);
+    cap.classList.toggle('is-before', k < i);
+    if (k === i) cap.removeAttribute('aria-hidden');
+    else cap.setAttribute('aria-hidden', 'true');
+  });
+  // One screen moves: the new one comes in over the screen on show, or the screen on show leaves and uncovers the new
+  // one. Screens skipped on the way stay out of it, and anything else that has to change place does so at once, unseen
+  // under the screen on show. On the first frame nothing moves.
+  const mover = from < 0 ? -1 : Math.max(i, from);
+  let beneath = -1;
+  shots.forEach((shot, k) => {
+    const was = shot.classList.contains('is-in');
+    const is = k === i || (k < i && was);
+    if (is && k < i) beneath = k;
+    shot.classList.toggle('now', is !== was && k !== mover);
+    shot.classList.toggle('is-in', is);
+    shot.classList.toggle('near', Math.abs(k - i) < 2);
+  });
+  // the screen right under a pushed one gives way a little
+  shots.forEach((shot, k) => shot.classList.toggle('under', k === beneath && STEPS[i].kind === 'push'));
+  stage.dataset.step = String(i);
 }
 function poseAt(p: number): Pose {
   const set = wideMq.matches ? WIDE : NARROW;
@@ -363,12 +411,28 @@ const liftAt = (k: number, p: number) =>
 
 function frame(now: number) {
   raf = 0;
+  const first = shown < 0;
+  const y = window.scrollY - start;
+  if (!last) speed = 0; // the page was at rest
+  if (first) lastY = y;
   const dt = Math.min(64, last ? now - last : 16);
   last = now;
-  const y = window.scrollY - start;
   const p = clamp(y / range, 0, 1) * N;
   const c = clamp((y - range) / cover, 0, 1); // 0 … 1 while the closing card slides over the stage
-  setStep(Math.min(N - 1, Math.floor(p + 1e-4)), c > 0.9, now);
+  // scroll speed over about the last sixteenth of a second. One frame cannot count for more than eight steps per
+  // second, so a jump straight to another place in the page does not pass for a long fast scroll.
+  const stride = range / N;
+  speed += (clamp(((y - lastY) / dt / stride) * 1000, -8, 8) - speed) * (1 - Math.exp(-dt / 60));
+  lastY = y;
+  // A step comes on show once the scroll is in it and is going to stop in it. A page flung through several steps
+  // shows the one it lands on, in a single change, and nothing of what it passed on the way: no ground, caption or
+  // screen starts to arrive only to be replaced a moment later.
+  active = Math.min(N - 1, Math.floor(p + 1e-4));
+  const landing = clamp(Math.floor(p + speed * COAST + 1e-4), 0, N - 1);
+  if (active !== shown && (first || landing === active || now < eager)) show(active, now);
+  const waiting = active !== shown;
+  // when the closing card is nearly up, what is left of the stage joins it
+  setTone(c > 0.9 ? 'orange' : STEPS[shown].tone, !reduced && !first);
   const scrolled = window.scrollY > 24;
   if (scrolled !== moved) {
     moved = scrolled;
@@ -394,7 +458,7 @@ function frame(now: number) {
     tgt[3] += 4 * c;
     tgt[4] *= 1 - 0.1 * c;
   }
-  const grow = room[active] || 0;
+  const grow = room[shown] || 0;
   tgt[4] *= 1 + (grow * SS) / ph;
   tgt[3] -= ((grow * SS) / 2 / ph) * 100;
   const stiff = intro ? 30 : 150;
@@ -457,11 +521,11 @@ function frame(now: number) {
   // picture is ready. The move then has three parts, in this order (and in reverse on the way back):
   //   1. the copy fades in, still lying flat on the element;  2. under the opaque copy the element is erased;
   //   3. the copy rises. The element is on screen and in one piece at every moment, so nothing dims, doubles or blinks.
-  const group = groups[active];
+  const group = groups[shown];
   const since = now - stepAt;
   const armed = !reduced && !intro && since >= 600 && group.readyAt >= 0 && now - group.readyAt >= 150;
   if (armed && !group.armed) group.armedAt = now;
-  const lifted = armed ? liftAt(active, p) * smooth(120, 500, now - group.armedAt) : 0;
+  const lifted = armed ? liftAt(shown, p) * smooth(120, 500, now - group.armedAt) : 0;
   if (armed !== group.armed || Math.abs(lifted - group.last) > 0.002) {
     group.armed = armed;
     group.last = lifted;
@@ -479,7 +543,7 @@ function frame(now: number) {
     return;
   }
   const settling = (armed && now - group.armedAt < 550) || (!armed && group.readyAt >= 0 && now - group.readyAt < 200);
-  if (idle || intro || d > 0.03 || since < 650 || settling) kick();
+  if (idle || intro || d > 0.03 || since < 650 || settling || waiting) kick();
   else last = 0;
 }
 function kick() {
@@ -493,8 +557,10 @@ phone.addEventListener('pointerdown', () => {
   kick();
 });
 phone.addEventListener('click', () => {
-  if (active < N - 1) goTo(active + 1);
-  else outro.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  if (active < N - 1) {
+    eager = performance.now() + 1500;
+    goTo(active + 1);
+  } else outro.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
 });
 window.addEventListener('scroll', kick, { passive: true });
 if (!reduced && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
@@ -516,7 +582,7 @@ if (!reduced && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
 const refit = () => {
   measure();
   buildBody();
-  if (active > -1) groups[active].last = -1;
+  if (shown > -1) groups[shown].last = -1;
   kick();
 };
 window.addEventListener('resize', refit);

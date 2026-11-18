@@ -9,39 +9,39 @@
 html, body { margin:0 }
 img{ max-width:100% }
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
-/* Layout: one pinned stage (wordmark, caption, a phone built in real 3D). Scrolling turns the phone from
-   pose to pose and steps it through the eight app screens; on each screen the part being talked about lifts off
-   the glass. A single orange brand card closes the page. */
+/* the û of the wordmark changes colour with the ground; registered so that it can fade instead of jumping */
+@property --wm-u{ syntax:"<color>"; inherits:true; initial-value:#F37C20 }
 :root{
-  --canvas:#F5F4F1; --tint:#FDEEE0; --orange:#F37C20; --ink:#1A1A1A; --night:#141312; --white:#FFFFFF;
-  --muted:#57534E;
-  /* the current "tone": re-pointed per step by html[data-tone] below */
-  --ground:var(--canvas); --fg:var(--ink); --fg2:var(--muted);
-  --wm:var(--ink); --wm-u:var(--orange); --chip:rgba(26,26,26,.075); --btn:var(--ink); --btn-fg:#FFFFFF;
-  --glow-o:.6; --floor-o:1;
+  --canvas:#F5F4F1; --orange:#F37C20; --ink:#1A1A1A; --muted:#57534E;
+  /* how long the ground takes to change colour. What is written on it changes colour quickly, at the moment the ground
+     is half-way: dark writing turning light at the ground's own pace would vanish into it on the way */
+  --swap:.6s cubic-bezier(.4,0,.2,1); --flip:.16s ease .14s;
   --arabic:-apple-system,BlinkMacSystemFont,"SF Arabic","Geeza Pro","Noto Sans Arabic","Segoe UI",sans-serif;
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
   --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
   --cap-h:194px; --step:125vh; --ease:cubic-bezier(.22,1,.36,1);
-  color-scheme:light; background:var(--ground); transition:background-color .7s ease;
+  /* The page's own background shows only where the page is pulled past its top or its end, and beside it on a phone
+     held sideways. It takes the ground's colour in one go, when the ground is half-way there. */
+  color-scheme:light; background:var(--canvas); transition:background-color 0s linear .22s;
 }
 @supports (height:1svh){ :root{ --step:125svh } }
-html[data-tone="tint"]{ --ground:var(--tint); --glow-o:.55 }
-html[data-tone="orange"]{ --ground:var(--orange); --fg2:rgba(26,26,26,.82); --wm-u:var(--ink);
-  --chip:rgba(26,26,26,.13); --glow-o:.3 }
-html[data-tone="night"] .rig{ --aura:rgba(243,124,32,.3) }
-html[data-tone="orange"] .rig{ --aura:rgba(255,236,214,.5) }
-html[data-tone="night"]{ --ground:var(--night); --fg:#F5F4F1; --fg2:#B8B2A9; --wm:#FFFFFF;
-  --chip:rgba(255,255,255,.13); --btn:#F5F4F1; --btn-fg:var(--ink); --glow-o:.07; --floor-o:.35 }
 
 *,*::before,*::after{ box-sizing:border-box }
-body{ background:var(--ground); color:var(--fg); font-family:var(--ui); transition:background-color .7s ease;
+body{ color:var(--ink); font-family:var(--ui);
   -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%; text-rendering:optimizeLegibility }
-body::before{ content:""; position:fixed; inset:0 0 auto; height:var(--st); background:var(--ground); z-index:10; transition:background-color .7s ease }
+
+/* ---------- the ground ---------- */
+/* One sheet fixed behind everything, as tall as the screen ever gets. To change colour it takes the new colour at
+   once, under a second sheet that holds what was on screen and fades away (src/main.ts). Only that opacity moves, which
+   the browser does without repainting anything: the whole ground changes as one piece, at any scroll speed, and no
+   strip of the page can lag behind in another colour. */
+.backdrop{ position:fixed; z-index:-1; inset:0 0 auto; height:100vh; background:var(--canvas); pointer-events:none }
+@supports (height:1lvh){ .backdrop{ height:100lvh } }
+.wash{ position:absolute; inset:0; display:block; opacity:0; transition:opacity var(--swap); will-change:opacity }
 [dir="rtl"]{ font-family:var(--arabic); letter-spacing:0 }
 a{ color:inherit }
-:focus-visible{ outline:2.5px solid var(--fg); outline-offset:3px; border-radius:8px }
+:focus-visible{ outline:2.5px solid currentColor; outline-offset:3px; border-radius:8px }
 
 /* ---------- the pinned stage ---------- */
 /* 8 steps of scrolling, the stage itself, and one more screen during which the closing card slides over the stage */
@@ -50,23 +50,32 @@ a{ color:inherit }
 .stage{ position:sticky; top:var(--st); height:calc(100vh - var(--st) - var(--sb)); overflow:hidden;
   display:grid; grid-template-rows:auto auto minmax(0,1fr); grid-template-columns:minmax(0,1fr);
   padding-left:var(--gl); padding-right:var(--gr); padding-bottom:10px;
-  background:var(--ground); transition:background-color .7s ease }
+  /* what stays on the ground (wordmark, language, the light around the phone) takes its colours from the ground's tone */
+  --fg:var(--ink); --wm:var(--ink); --wm-u:var(--orange); --chip:rgba(26,26,26,.075); --glow:.6; --shadow:1 }
 @supports (height:1svh){ .stage{ height:calc(100svh - var(--st) - var(--sb)) } }
+.stage[data-tone="tint"]{ --glow:.55 }
+.stage[data-tone="orange"]{ --wm-u:var(--ink); --chip:rgba(26,26,26,.13); --glow:.3 }
+.stage[data-tone="night"]{ --fg:#F5F4F1; --wm:#FFFFFF; --chip:rgba(255,255,255,.13); --glow:.07; --shadow:.35 }
 
 .bar{ position:relative; z-index:3; display:flex; align-items:center; gap:6px; height:52px }
-.wordmark{ display:block; height:19px; width:78px; flex:none; color:var(--wm); transition:color .5s ease }
-.wordmark path{ transition:fill .5s ease }
+.wordmark{ display:block; height:19px; width:78px; flex:none; color:var(--wm); transition:color var(--flip), --wm-u var(--flip) }
 
 
 /* ---------- captions ---------- */
 .captions{ position:relative; z-index:3; height:var(--cap-h); margin-top:10px }
 .cap{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:flex-start; gap:9px; pointer-events:none }
-.cap > *{ opacity:0; transform:translate3d(0,16px,0); transition:opacity .28s ease, transform .5s var(--ease) }
+/* Each caption is written in the colours of its own step's ground and never changes them. It leaves quickly and the
+   next one waits until it has gone and the ground has turned: two texts never lie over each other, and light text
+   never shows on a light ground. */
+.cap{ --fg:var(--ink); --fg2:var(--muted) }
+.cap[data-tone="orange"]{ --fg2:rgba(26,26,26,.82) }
+.cap[data-tone="night"]{ --fg:#F5F4F1; --fg2:#B8B2A9 }
+.cap > *{ opacity:0; transform:translate3d(0,16px,0); transition:opacity .16s ease, transform .5s var(--ease) }
 .cap.is-before > *{ transform:translate3d(0,-16px,0) }
 .cap.is-active{ pointer-events:auto }
-.cap.is-active > *{ opacity:1; transform:none; transition:opacity .4s ease .1s, transform .7s var(--ease) .1s }
-.cap.is-active > :nth-child(2){ transition-delay:.16s }
-.cap.is-active > :nth-child(3){ transition-delay:.22s }
+.cap.is-active > *{ opacity:1; transform:none; transition:opacity .4s ease .2s, transform .7s var(--ease) .2s }
+.cap.is-active > :nth-child(2){ transition-delay:.26s }
+.cap.is-active > :nth-child(3){ transition-delay:.32s }
 h1,h2{ margin:0; font-family:"Unbounded",var(--ui); font-weight:700; letter-spacing:-.028em; line-height:1.1; color:var(--fg); text-wrap:balance }
 h1{ font-size:clamp(27px,7.9vw,36px) }
 h2{ font-size:clamp(22px,6.5vw,30px) }
@@ -79,7 +88,7 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 
 .stores{ display:flex; gap:8px; width:100%; margin-top:5px }
 .store{ flex:1 1 0; min-width:0; max-width:210px; display:flex; align-items:center; justify-content:center; gap:9px; height:50px; padding:0 12px; border-radius:999px;
-  background:var(--btn); color:var(--btn-fg); text-decoration:none }
+  background:var(--ink); color:#FFFFFF; text-decoration:none }
 .store svg{ width:22px; height:22px; flex:none }
 .store span{ display:flex; flex-direction:column; align-items:flex-start; min-width:0; line-height:1.1 }
 .store small{ font-size:10px; font-weight:500; opacity:.78; white-space:nowrap }
@@ -89,16 +98,19 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 /* ---------- the phone, in 3D ---------- */
 .phone-area{ position:relative; min-height:0; margin-top:-34px }
 /* --ss: the phone is built this many times larger than it is shown and scaled back down (set in the script, see there) */
-.rig{ --ss:1; --pw:230px; --pt:18px; --sheen:.2; --back:#8F8A82; --chamfer:rgba(236,230,220,.75); --aura:rgba(255,255,255,.5); position:absolute; inset:calc((1 - var(--ss)) * 50%); z-index:1; display:grid; grid-template:100% / 100%; place-items:center;
+.rig{ --ss:1; --pw:230px; --pt:18px; --sheen:.2; --back:#8F8A82; --chamfer:rgba(236,230,220,.75); position:absolute; inset:calc((1 - var(--ss)) * 50%); z-index:1; display:grid; grid-template:100% / 100%; place-items:center;
   perspective:1080px; perspective-origin:50% 46%; transform:scale(calc(1 / var(--ss))) }
 .rig > *{ grid-area:1 / 1; position:relative; height:87%; max-height:calc(640px * var(--ss)); max-width:92%; aspect-ratio:1066 / 2235 }   /* shadow box, phone and its twin: one size */
 /* what floats in front of the glass sits in a twin of the phone, drawn after it, so it can never sort behind the phone */
 .above{ pointer-events:none }
 .phone-area::before{ content:""; position:absolute; left:50%; top:50%; width:150%; max-width:900px; aspect-ratio:1; transform:translate(-50%,-50%); pointer-events:none;
-  background:radial-gradient(closest-side, #fff, rgba(255,255,255,0) 72%); opacity:var(--glow-o); transition:opacity .7s ease }
+  background:radial-gradient(closest-side, #fff, rgba(255,255,255,0) 72%); opacity:var(--glow); transition:opacity .4s ease .2s }
+/* light behind the phone: white on the light grounds (.aura), a warm glow on the dark one (.ember). Going dark the
+   white goes first, coming back it waits for the ground: it never shows as a pale cloud on a ground still dark */
+.stage[data-tone="night"] .phone-area::before{ transition:opacity .22s ease }
 .ground{ pointer-events:none }
 .floor{ position:absolute; left:-12%; right:-12%; bottom:-7.5%; height:10%; border-radius:50%; display:block;
-  background:radial-gradient(closest-side, rgba(32,18,6,.36), rgba(32,18,6,0)); opacity:var(--floor-o); transition:opacity .7s ease; will-change:transform }
+  background:radial-gradient(closest-side, rgba(32,18,6,.36), rgba(32,18,6,0)); opacity:var(--shadow); transition:opacity var(--swap); will-change:transform }
 .phone{ cursor:pointer;
   transform-style:preserve-3d; transform:rotateX(14deg) rotateY(-24deg) rotateZ(4deg); will-change:transform }
 [dir="rtl"] .phone{ transform:rotateX(14deg) rotateY(24deg) rotateZ(-4deg) }
@@ -116,8 +128,12 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 .sheen{ position:absolute; inset:1.477% 3.1%; border-radius:13.97% / 6.44%; overflow:hidden }
 .sheen i{ position:absolute; inset:-25% -95%; display:block; will-change:transform;
   background:linear-gradient(104deg, rgba(255,255,255,0) 37%, rgba(255,255,255,var(--sheen)) 46.5%, rgba(255,255,255,calc(var(--sheen) * .3)) 51%, rgba(255,255,255,0) 58%, rgba(255,255,255,0) 66%, rgba(255,255,255,calc(var(--sheen) * .45)) 69%, rgba(255,255,255,0) 73%) }
-.aura{ position:absolute; inset:6% -38%; border-radius:50%; display:block; pointer-events:none; background:radial-gradient(closest-side, var(--aura), rgba(255,255,255,0)); opacity:.0; transition:opacity .9s ease, background .9s ease }
-html[data-step] .aura{ opacity:1 }
+.aura,.ember{ position:absolute; inset:6% -38%; border-radius:50%; display:block; pointer-events:none }
+.aura{ background:radial-gradient(closest-side, rgba(255,255,255,.5), rgba(255,255,255,0)); transition:opacity .4s ease .2s }
+.ember{ background:radial-gradient(closest-side, rgba(243,124,32,.3), rgba(243,124,32,0)); opacity:0; transition:opacity .22s ease }
+.stage[data-tone="orange"] .aura{ opacity:.84 }
+.stage[data-tone="night"] .aura{ opacity:0; transition:opacity .22s ease }
+.stage[data-tone="night"] .ember{ opacity:1; transition:opacity .4s ease .25s }
 .back{ position:absolute; inset:0; border-radius:16.2% / 7.73%; background:var(--back); transform:translateZ(calc(var(--pt) * -1)) }
 .face,.back,.edge i,.pc .lift{ outline:1px solid transparent }   /* keeps the edges of turned surfaces smooth */
 .face{ position:absolute; inset:0; border-radius:16.2% / 7.73%; background:#050506; box-shadow:inset 0 0 0 calc(1.6px * var(--ss)) var(--chamfer), inset 0 0 0 calc(3.6px * var(--ss)) #050506, inset 0 0 calc(var(--pw) * .05) rgba(255,255,255,.09) }
@@ -129,8 +145,8 @@ html[data-step] .aura{ opacity:1 }
 .st{ top:0; height:var(--cut); object-position:50% 0; opacity:0; transition:opacity .34s ease }
 .bd{ top:var(--cut); height:calc(100% - var(--cut)); object-position:50% 100%; transition:transform .64s var(--ease) }
 .s.near .bd{ will-change:transform }
-/* scrolled past several screens at once: they take their places without sliding over each other */
-.screen.jump .bd,.screen.jump .st,.screen.jump .s::before{ transition:none }
+/* a screen slipped into place unseen, under the one on show */
+.s.now .bd,.s.now .st,.s.now::before{ transition:none }
 .s.is-in .st{ opacity:1 }
 .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(101%,0,0) }
 [dir="rtl"] .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(-101%,0,0) }
@@ -155,7 +171,7 @@ html[data-step] .aura{ opacity:1 }
   column-gap:calc(var(--pw) * .034); padding:calc(var(--pw) * .034) calc(var(--pw) * .042); border-radius:calc(var(--pw) * .085);
   background:#FFFFFF; color:#1A1A1A; box-shadow:0 calc(var(--pw) * .09) calc(var(--pw) * .16) calc(var(--pw) * -.057) rgba(0,0,0,.55), 0 calc(var(--pw) * .008) calc(var(--pw) * .024) rgba(0,0,0,.14);
   opacity:0; transform:translate3d(0,calc(var(--pw) * -.16),calc(var(--pw) * .1)) scale(.9); transition:opacity .2s ease, transform .4s var(--ease); pointer-events:none; text-align:start }
-html[data-step="5"] .notif{ opacity:1; transform:translate3d(0,0,calc(var(--pw) * .3)); transition:opacity .3s ease .55s, transform .8s cubic-bezier(.2,1.25,.35,1) .55s }
+.stage[data-step="5"] .notif{ opacity:1; transform:translate3d(0,0,calc(var(--pw) * .3)); transition:opacity .3s ease .55s, transform .8s cubic-bezier(.2,1.25,.35,1) .55s }
 .notif svg{ width:calc(var(--pw) * .135); height:calc(var(--pw) * .135); border-radius:24%; display:block }
 .notif b{ display:block; font-size:calc(var(--pw) * .052); font-weight:700; line-height:1.25; letter-spacing:-.01em }
 .notif span{ display:block; font-size:calc(var(--pw) * .047); line-height:1.3; color:#3F3B37 }
@@ -231,21 +247,21 @@ html[data-moved] .hint{ opacity:0 }
 
 @media (prefers-reduced-motion:reduce){
   .pieces{ display:none }
-  .st,.bd,.s::before,.cap > *,.cap.is-active > *,.notif,html[data-step="5"] .notif{ transition:none !important }
+  .st,.bd,.s::before,.cap > *,.cap.is-active > *,.notif,.stage[data-step="5"] .notif{ transition:none !important }
   .hint{ animation:none !important }
-  :root,body,body::before,.stage{ transition:none !important }
+  :root,.wash,.wordmark,.language-control,.aura,.ember,.phone-area::before,.floor{ transition:none !important }
 }
 
 /* ---------- language picker and store buttons ---------- */
 .bar{ justify-content:space-between }
-.language-control{ position:relative; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 12px; border-radius:999px; background:var(--chip); color:var(--fg); transition:background-color .5s ease, color .5s ease }
+.language-control{ position:relative; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 12px; border-radius:999px; background:var(--chip); color:var(--fg); transition:background-color var(--flip), color var(--flip) }
 .language-control svg{ flex:none }
 .language-name{ font:600 13px/1 var(--ui); white-space:nowrap }
 [dir="rtl"] .language-name{ font-family:var(--arabic) }
 /* the real select lies invisibly over the pill, so the pill is only as wide as the chosen language's name */
 .language-control select{ position:absolute; inset:0; width:100%; height:100%; margin:0; border:0; opacity:0; cursor:pointer; font-size:16px }
 .language-control select:focus-visible{ outline:none }
-.language-control:focus-within{ outline:2.5px solid var(--fg); outline-offset:2px }
+.language-control:focus-within{ outline:2.5px solid currentColor; outline-offset:2px }
 .store{ cursor:default }
 .hint-line{ margin:0; font-size:15px; line-height:1.5; color:rgba(26,26,26,.86) }
 /* index.html is drawn in Sorani; /lang.js adds this class for any other language until src/main.ts has translated
