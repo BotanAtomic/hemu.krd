@@ -1,6 +1,11 @@
 /* hemu.krd landing page. One pinned stage: wordmark, caption and a phone built in real 3D. Scrolling turns the
    phone from pose to pose and steps it through the eight app screens; on each screen the part being talked about
    lifts off the glass. A single orange card closes the page. */
+/* Unbounded Bold, the brand's headline face (SIL Open Font License), served from this site: the content security
+   policy allows no other origin. The extended file is fetched only by languages that need it (ş, ğ, ı …).
+   It has no Arabic script: Soranî, Arabic and Persian headlines use the system font. */
+@font-face{ font-family:"Unbounded"; font-weight:700; font-style:normal; font-display:swap; src:url(./assets/fonts/unbounded-700-latin.woff2) format("woff2"); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD }
+@font-face{ font-family:"Unbounded"; font-weight:700; font-style:normal; font-display:swap; src:url(./assets/fonts/unbounded-700-latin-ext.woff2) format("woff2"); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF }
 html, body { margin:0 }
 img{ max-width:100% }
 .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
@@ -18,10 +23,10 @@ img{ max-width:100% }
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
   --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
-  --cap-h:194px; --step:80vh; --ease:cubic-bezier(.22,1,.36,1);
+  --cap-h:194px; --step:125vh; --ease:cubic-bezier(.22,1,.36,1);
   color-scheme:light; background:var(--ground); transition:background-color .7s ease;
 }
-@supports (height:1svh){ :root{ --step:80svh } }
+@supports (height:1svh){ :root{ --step:125svh } }
 html[data-tone="tint"]{ --ground:var(--tint); --glow-o:.55 }
 html[data-tone="orange"]{ --ground:var(--orange); --fg2:rgba(26,26,26,.82); --wm-u:var(--ink);
   --chip:rgba(26,26,26,.13); --glow-o:.3 }
@@ -62,9 +67,9 @@ a{ color:inherit }
 .cap.is-active > *{ opacity:1; transform:none; transition:opacity .4s ease .1s, transform .7s var(--ease) .1s }
 .cap.is-active > :nth-child(2){ transition-delay:.16s }
 .cap.is-active > :nth-child(3){ transition-delay:.22s }
-h1,h2{ margin:0; font-family:var(--ui); font-weight:800; letter-spacing:-.038em; line-height:1.06; color:var(--fg); text-wrap:balance }
-h1{ font-size:clamp(31px,9.2vw,42px) }
-h2{ font-size:clamp(25px,7.5vw,34px) }
+h1,h2{ margin:0; font-family:"Unbounded",var(--ui); font-weight:700; letter-spacing:-.028em; line-height:1.1; color:var(--fg); text-wrap:balance }
+h1{ font-size:clamp(27px,7.9vw,36px) }
+h2{ font-size:clamp(22px,6.5vw,30px) }
 [dir="rtl"] h1,[dir="rtl"] h2{ font-family:var(--arabic); font-weight:800; letter-spacing:0; line-height:1.36 }
 [dir="rtl"] h1{ font-size:clamp(28px,8.2vw,38px) }
 [dir="rtl"] h2{ font-size:clamp(23px,6.8vw,31px) }
@@ -124,6 +129,8 @@ html[data-step] .aura{ opacity:1 }
 .st{ top:0; height:var(--cut); object-position:50% 0; opacity:0; transition:opacity .34s ease }
 .bd{ top:var(--cut); height:calc(100% - var(--cut)); object-position:50% 100%; transition:transform .64s var(--ease) }
 .s.near .bd{ will-change:transform }
+/* scrolled past several screens at once: they take their places without sliding over each other */
+.screen.jump .bd,.screen.jump .st,.screen.jump .s::before{ transition:none }
 .s.is-in .st{ opacity:1 }
 .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(101%,0,0) }
 [dir="rtl"] .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(-101%,0,0) }
@@ -201,8 +208,8 @@ html[data-moved] .hint{ opacity:0 }
   .wordmark{ height:24px; width:98px }
   .captions{ height:min(52vh,460px); align-self:center; margin:0 }
   .cap{ justify-content:center; gap:16px }
-  h1{ font-size:clamp(44px,5.7vw,86px) }
-  h2{ font-size:clamp(34px,4.5vw,64px) }
+  h1{ font-size:clamp(38px,5vw,74px) }
+  h2{ font-size:clamp(30px,3.9vw,56px) }
   [dir="rtl"] h1{ font-size:clamp(40px,5.2vw,78px) }
   [dir="rtl"] h2{ font-size:clamp(32px,4.1vw,60px) }
   .sub,.body{ font-size:clamp(16px,1.4vw,20px); max-width:38ch; -webkit-line-clamp:4 }
@@ -233,8 +240,10 @@ html[data-moved] .hint{ opacity:0 }
 .bar{ justify-content:space-between }
 .language-control{ position:relative; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 12px; border-radius:999px; background:var(--chip); color:var(--fg); transition:background-color .5s ease, color .5s ease }
 .language-control svg{ flex:none }
-.language-control select{ appearance:none; -webkit-appearance:none; border:0; background:none; color:inherit; font:600 13px/1 var(--ui); padding:10px 0; margin:0; max-width:46vw; cursor:pointer }
-[dir="rtl"] .language-control select{ font-family:var(--arabic) }
+.language-name{ font:600 13px/1 var(--ui); white-space:nowrap }
+[dir="rtl"] .language-name{ font-family:var(--arabic) }
+/* the real select lies invisibly over the pill, so the pill is only as wide as the chosen language's name */
+.language-control select{ position:absolute; inset:0; width:100%; height:100%; margin:0; border:0; opacity:0; cursor:pointer; font-size:16px }
 .language-control select:focus-visible{ outline:none }
 .language-control:focus-within{ outline:2.5px solid var(--fg); outline-offset:2px }
 .store{ cursor:default }
