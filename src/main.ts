@@ -117,7 +117,8 @@ let ph = 480;
 function buildBody() {
   const W = phone.offsetWidth;
   const H = phone.offsetHeight;
-  if (!W || !H) return;
+  // Phones fire resize whenever the address bar slides away: rebuild only when the phone really changed size.
+  if (!W || !H || (W === pw && H === ph && faces.length)) return;
   pw = W;
   ph = H;
   const R = W * 0.162;
@@ -261,6 +262,7 @@ function applyLang() {
   $('#alertBody').textContent = t.alert.body;
   $('#alertTime').textContent = t.alert.time;
   select.value = lang;
+  $('#languageName').textContent = meta.name;
   select.setAttribute('aria-label', t.languageLabel);
   for (const store of document.querySelectorAll<HTMLElement>('[data-store]')) {
     store.setAttribute('aria-label', `${store.dataset.store} — ${t.comingSoon}`);
@@ -322,6 +324,7 @@ function goTo(i: number) {
 }
 function setStep(i: number, finished: boolean, now: number) {
   if (i !== active) {
+    const previous = active;
     if (active > -1) groups[active].el.classList.remove('on');
     active = i;
     groups[i].el.classList.add('on');
@@ -333,6 +336,9 @@ function setStep(i: number, finished: boolean, now: number) {
       if (k === i) cap.removeAttribute('aria-hidden');
       else cap.setAttribute('aria-hidden', 'true');
     });
+    // a fast scroll crosses screens quicker than they can slide: place them instead of animating a pile-up
+    const fast = Math.abs(i - previous) > 1 || now - stepAt < 320;
+    screen.classList.toggle('jump', fast);
     shots.forEach((shot, k) => {
       shot.classList.toggle('is-in', k <= i);
       shot.classList.toggle('near', Math.abs(k - i) < 2);
@@ -392,7 +398,7 @@ function frame(now: number) {
   tgt[4] *= 1 + (grow * SS) / ph;
   tgt[3] -= ((grow * SS) / 2 / ph) * 100;
   const stiff = intro ? 30 : 150;
-  const damp = intro ? 10.5 : 19;
+  const damp = intro ? 10.5 : 22;
   const h = dt / 2000;
   let d = 0;
   for (let i = 0; i < 5; i++) {

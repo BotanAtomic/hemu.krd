@@ -18,10 +18,10 @@ img{ max-width:100% }
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
   --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
-  --cap-h:194px; --step:80vh; --ease:cubic-bezier(.22,1,.36,1);
+  --cap-h:194px; --step:125vh; --ease:cubic-bezier(.22,1,.36,1);
   color-scheme:light; background:var(--ground); transition:background-color .7s ease;
 }
-@supports (height:1svh){ :root{ --step:80svh } }
+@supports (height:1svh){ :root{ --step:125svh } }
 html[data-tone="tint"]{ --ground:var(--tint); --glow-o:.55 }
 html[data-tone="orange"]{ --ground:var(--orange); --fg2:rgba(26,26,26,.82); --wm-u:var(--ink);
   --chip:rgba(26,26,26,.13); --glow-o:.3 }
@@ -124,6 +124,8 @@ html[data-step] .aura{ opacity:1 }
 .st{ top:0; height:var(--cut); object-position:50% 0; opacity:0; transition:opacity .34s ease }
 .bd{ top:var(--cut); height:calc(100% - var(--cut)); object-position:50% 100%; transition:transform .64s var(--ease) }
 .s.near .bd{ will-change:transform }
+/* scrolled past several screens at once: they take their places without sliding over each other */
+.screen.jump .bd,.screen.jump .st,.screen.jump .s::before{ transition:none }
 .s.is-in .st{ opacity:1 }
 .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(101%,0,0) }
 [dir="rtl"] .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(-101%,0,0) }
@@ -233,8 +235,10 @@ html[data-moved] .hint{ opacity:0 }
 .bar{ justify-content:space-between }
 .language-control{ position:relative; display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 12px; border-radius:999px; background:var(--chip); color:var(--fg); transition:background-color .5s ease, color .5s ease }
 .language-control svg{ flex:none }
-.language-control select{ appearance:none; -webkit-appearance:none; border:0; background:none; color:inherit; font:600 13px/1 var(--ui); padding:10px 0; margin:0; max-width:46vw; cursor:pointer }
-[dir="rtl"] .language-control select{ font-family:var(--arabic) }
+.language-name{ font:600 13px/1 var(--ui); white-space:nowrap }
+[dir="rtl"] .language-name{ font-family:var(--arabic) }
+/* the real select lies invisibly over the pill, so the pill is only as wide as the chosen language's name */
+.language-control select{ position:absolute; inset:0; width:100%; height:100%; margin:0; border:0; opacity:0; cursor:pointer; font-size:16px }
 .language-control select:focus-visible{ outline:none }
 .language-control:focus-within{ outline:2.5px solid var(--fg); outline-offset:2px }
 .store{ cursor:default }
