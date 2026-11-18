@@ -1,103 +1,530 @@
 import './styles.css';
+import { PIECES } from './pieces';
 import { LANGS, T, pageLang } from './translations';
 import type { Lang } from './translations';
 
-type Screen = 'home' | 'listing' | 'profile';
-
-// Hashed URLs of every language's screenshots; the Sorani ones are also named
-// directly in index.html so the browser can fetch them before this module runs.
+// Hashed URLs of every language's screens; the Sorani Home screen is also named
+// directly in index.html so the browser can fetch it before this module runs.
 const screenUrls = import.meta.glob<string>('./assets/screens/*.webp', {
   eager: true,
   query: '?url',
   import: 'default',
 });
-// The screens come from the "hemû - app" design, which has no Kurmanji or Persian
-// set: those languages show the English and Sorani screens.
-const SCREEN_LANG: Partial<Record<Lang, Lang>> = { ku: 'en', fa: 'ckb' };
-const screenUrl = (screen: Screen, lang: Lang) =>
-  screenUrls[`./assets/screens/${screen}-${SCREEN_LANG[lang] ?? lang}.webp`];
+const screenUrl = (name: string, lang: Lang) => screenUrls[`./assets/screens/${name}-${lang}.webp`];
 
-const ALT: Record<Screen, string> = {
-  home: 'marketplace home screen',
-  listing: 'listing screen',
-  profile: 'seller profile screen',
-};
+type Kind = 'modal' | 'sheet' | 'push';
+type Tone = 'canvas' | 'orange' | 'tint' | 'night';
+interface Step {
+  name: string;
+  tone: Tone;
+  kind?: Kind;
+  /** Where the part that moves begins, in % of the screen height: under the status bar, or the top of the sheet. */
+  cut?: number;
+}
+const STEPS: Step[] = [
+  { name: '01-home', tone: 'canvas' },
+  { name: '02-sell', kind: 'modal', tone: 'orange', cut: 5.9 },
+  { name: '03-filters', kind: 'sheet', tone: 'canvas', cut: 7.5 },
+  { name: '04-offers', kind: 'push', tone: 'tint', cut: 5.9 },
+  { name: '05-listing', kind: 'push', tone: 'canvas', cut: 5.9 },
+  { name: '06-alerts', kind: 'push', tone: 'night', cut: 5.9 },
+  { name: '07-follow', kind: 'push', tone: 'canvas', cut: 5.9 },
+  { name: '08-cities', kind: 'sheet', tone: 'tint', cut: 7.7 },
+];
+// The English city sheet starts lower than the others.
+const cutFor = (i: number, lang: Lang) => (i === 7 && lang === 'en' ? 11.7 : STEPS[i].cut);
+const N = STEPS.length;
+
+// The phone's pose at rest in each step: [tilt back, turn, roll (degrees), drop (% of its height), scale].
+// Narrow screens swing left and right; wide screens keep the phone turned toward the words.
+type Pose = [number, number, number, number, number];
+const KEY = [0, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8];
+const NARROW: Pose[] = [[14, -24, 4, 0, 1], [8, 22, -3, 0, 1], [13, -19, 2, 0, 1], [6, 24, -2, 0, 1], [12, -22, 3, 0, 1], [21, 15, -4, 1.5, 0.97], [8, -21, 2, 0, 1], [12, 18, -2, 0, 1], [9, 7, -1, 0, 1]];
+const WIDE: Pose[] = [[12, -29, 3, 0, 1], [7, -15, -2, 0, 1], [13, -28, 2, 0, 1], [6, -14, -2, 0, 1], [12, -27, 3, 0, 1], [21, -17, -3, 1.5, 0.97], [8, -26, 2, 0, 1], [12, -15, -2, 0, 1], [8, -12, 0, 0, 1]];
+const STILL: Pose = [8, -14, 2, 0, 1];
+// Frame colour (titanium) and how strongly it catches the light.
+const METAL = [196, 189, 178];
+const SPEC = 0.5;
 
 const root = document.documentElement;
-const select = document.querySelector<HTMLSelectElement>('#language')!;
-const track = document.querySelector<HTMLElement>('#mobile-track')!;
-const dots = Array.from(document.querySelectorAll<HTMLButtonElement>('#mobile-pagination button'));
-const slides = Array.from(track.querySelectorAll<HTMLElement>('.mobile-slide'));
+const $ = <E extends Element = HTMLElement>(selector: string) => document.querySelector<E>(selector)!;
+const tour = $('#tour');
+const stage = $('.stage');
+const area = $('#area');
+const rig = $('#rig');
+const phone = $('#phone');
+const above = $('#above');
+const gloss = $('#gloss');
+const sheen = $('#sheen');
+const rimA = $('#rimA');
+const rimB = $('#rimB');
+const outro = $('#get');
+const veil = $('#veil');
+const edge = $('#edge');
+const screen = $('#screen');
+const floor = $('#floor');
+const piecesEl = $('#pieces');
+const captions = $('#captions');
+const select = $<HTMLSelectElement>('#language');
 
-function setActiveScreen(index: number) {
-  dots.forEach((dot, i) => {
-    dot.classList.toggle('is-active', i === index);
-    dot.setAttribute('aria-selected', String(i === index));
-  });
-  slides.forEach((slide, i) => slide.setAttribute('aria-hidden', String(i !== index)));
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wideMq = window.matchMedia('(min-width:860px), (orientation:landscape) and (min-width:600px)');
+// Chromium chooses the resolution of each surface in a 3D scene by rounding how large it currently looks. Two surfaces
+// side by side can therefore come out at different sharpness, and one can snap sharper or softer while the phone turns
+// (seen as a flicker on small detailed things like the camera thumbnails). Building the phone twice as large and scaling
+// it back down makes every surface come out at the same, full resolution, and supersamples it as a bonus. It costs four
+// times the picture memory, so it is used where that is plentiful and the softness shows most: Chromium with a mouse.
+const chromium = 'chrome' in window || /\bChrom(e|ium)\//.test(navigator.userAgent);
+const SS = chromium && window.matchMedia('(hover:hover) and (pointer:fine)').matches ? 2 : 1;
+rig.style.setProperty('--ss', String(SS));
+
+const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+const smooth = (a: number, b: number, v: number) => {
+  const t = clamp((v - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
+// ----- the parts that only exist while scrolling: captions and screens 2 to 8 -----
+const caps = [$('.cap')];
+const shots = [$('.s')];
+STEPS.forEach((step, i) => {
+  if (i === 0) return;
+  const cap = document.createElement('section');
+  cap.className = 'cap';
+  cap.setAttribute('aria-hidden', 'true');
+  cap.innerHTML = '<h2></h2><p class="body"></p>';
+  captions.appendChild(cap);
+  caps.push(cap);
+  const shot = document.createElement('div');
+  shot.className = 's';
+  shot.dataset.kind = step.kind;
+  shot.innerHTML =
+    '<img class="st" width="780" height="1692" alt="" decoding="async"><img class="bd" width="780" height="1692" alt="" decoding="async">';
+  screen.appendChild(shot);
+  shots.push(shot);
+});
+
+// ----- the phone body: a frame with thickness, built from flat faces around the rounded outline -----
+interface Face {
+  light: HTMLElement;
+  nx: number;
+  ny: number;
+  shown: number;
+}
+const faces: Face[] = [];
+let pw = 230;
+let ph = 480;
+function buildBody() {
+  const W = phone.offsetWidth;
+  const H = phone.offsetHeight;
+  if (!W || !H) return;
+  pw = W;
+  ph = H;
+  const R = W * 0.162;
+  const thick = Math.max(10, Math.round(W * 0.078));
+  rig.style.setProperty('--pw', `${W}px`);
+  rig.style.setProperty('--pt', `${thick}px`);
+  piecesEl.style.setProperty('--sw', `${(W * 0.938).toFixed(1)}px`);
+  rig.style.perspective = `${Math.round(W * 4.7)}px`;
+  edge.textContent = '';
+  faces.length = 0;
+  const add = (px: number, py: number, phi: number, len: number, height: number, button = false) => {
+    const el = document.createElement('i');
+    const rad = (phi * Math.PI) / 180;
+    const nx = Math.cos(rad);
+    const ny = Math.sin(rad);
+    // how much this face looks at the light (top, a little left)
+    const lit = Math.pow(0.5 + 0.5 * (nx * -0.34 + ny * -0.94), 1.25);
+    const q = (button ? 0.62 : 0.42) + 0.58 * lit;
+    const out = button ? 1.4 * SS : 0;
+    el.style.cssText =
+      `width:${len.toFixed(2)}px;height:${height}px;margin:${-height / 2}px 0 0 ${(-len / 2).toFixed(2)}px;` +
+      `background:linear-gradient(to top,rgba(255,255,255,${(0.1 + 0.24 * lit).toFixed(2)}),rgba(255,255,255,0) 22%,rgba(0,0,0,0) 74%,rgba(0,0,0,.42)),rgb(${METAL.map((v) => Math.round(v * q)).join(',')});` +
+      (button ? `border-radius:${2 * SS}px;` : '') +
+      `transform:translate3d(${(px + nx * out).toFixed(2)}px,${(py + ny * out).toFixed(2)}px,${-thick / 2}px) rotateZ(${(phi + 90).toFixed(2)}deg) rotateX(90deg)`;
+    const light = document.createElement('u');
+    el.appendChild(light);
+    faces.push({ light, nx, ny, shown: -1 });
+    edge.appendChild(el);
+  };
+  add(W / 2, 0, -90, W - 2 * R + 1, thick);
+  add(W, H / 2, 0, H - 2 * R + 1, thick);
+  add(W / 2, H, 90, W - 2 * R + 1, thick);
+  add(0, H / 2, 180, H - 2 * R + 1, thick);
+  const n = 6;
+  const turn = 90 / n;
+  const len = 2 * R * Math.tan(((turn / 2) * Math.PI) / 180) * 1.08;
+  const corners = [[W - R, R, -90], [W - R, H - R, 0], [R, H - R, 90], [R, R, 180]];
+  for (const [cx, cy, from] of corners) {
+    for (let i = 0; i < n; i++) {
+      const phi = from + (i + 0.5) * turn;
+      const r = (phi * Math.PI) / 180;
+      add(cx + R * Math.cos(r), cy + R * Math.sin(r), phi, len, thick);
+    }
+  }
+  const bh = Math.round(thick * 0.44);
+  add(W, H * 0.335, 0, H * 0.1, bh, true); // side button
+  add(0, H * 0.215, 180, H * 0.034, bh, true); // action button
+  add(0, H * 0.305, 180, H * 0.066, bh, true); // volume up
+  add(0, H * 0.39, 180, H * 0.066, bh, true); // volume down
 }
 
-function render(lang: Lang) {
+// ----- the pieces that lift -----
+interface Item {
+  lift: number;
+  hole: HTMLElement;
+  shade: HTMLElement;
+  top: HTMLElement;
+}
+interface Group {
+  el: HTMLElement;
+  items: Item[];
+  last: number;
+  armed: boolean;
+  armedAt: number;
+  readyAt: number;
+}
+let groups: Group[] = [];
+let active = -1;
+let side = 1;
+let lang: Lang = pageLang();
+function buildPieces() {
+  piecesEl.textContent = '';
+  groups = PIECES[lang].map((list, step) => {
+    const el = document.createElement('div');
+    el.className = 'grp';
+    const url = screenUrl(STEPS[step].name, lang);
+    const part = (v: number) => `calc(var(--sw) * ${(v / 100).toFixed(5)})`;
+    const items = list.map(([x, y, w, h, r, lift, colour, margin, feather, down]) => {
+      const pc = document.createElement('div');
+      pc.className = 'pc';
+      pc.style.cssText = `left:${x}%;top:${y}%;width:${w}%;height:${h}%;--r:${(r / 100).toFixed(4)}`;
+      const hole = document.createElement('b');
+      const shade = document.createElement('b');
+      const top = document.createElement('b');
+      hole.className = 'hole';
+      shade.className = 'shade';
+      top.className = 'lift';
+      hole.style.cssText =
+        `inset:${part(-margin)};border-radius:${part(r + margin)};background:${colour}` +
+        (feather ? `;box-shadow:0 0 ${part(feather)} ${part(feather / 2)} ${colour},0 ${part(down * 0.55)} ${part(down * 0.5)} 0 ${colour}` : '');
+      top.style.backgroundImage = `url(${url})`;
+      top.style.backgroundSize = `${(10000 / w).toFixed(2)}% ${(10000 / h).toFixed(2)}%`;
+      top.style.backgroundPosition = `${((x / (100 - w)) * 100).toFixed(3)}% ${((y / (100 - h)) * 100).toFixed(3)}%`;
+      pc.append(hole, shade, top);
+      el.appendChild(pc);
+      return { lift, hole, shade, top };
+    });
+    piecesEl.appendChild(el);
+    const group: Group = { el, items, last: -1, armed: false, armedAt: 0, readyAt: list.length ? -1 : 0 };
+    if (list.length) {
+      // the copies draw the same picture as the screen: they wait until it is loaded and decoded
+      const image = new Image();
+      const done = () => {
+        group.readyAt = performance.now();
+        kick();
+      };
+      image.onload = () => image.decode().then(done, done);
+      image.src = url;
+    }
+    return group;
+  });
+  if (active > -1) groups[active].el.classList.add('on');
+}
+
+// ----- language -----
+// A price inside right-to-left text keeps its "$" on the left.
+const isolate = (text: string) => text.replace(/\$[\d,]+/g, '⁦$&⁩');
+function applyLang() {
   const t = T[lang];
   const meta = LANGS[lang];
-  const text: Record<string, string> = {
-    madeFor: t.madeFor,
-    languageLabel: t.languageLabel,
-    comingSoon: t.comingSoon,
-    headline: t.headline,
-    subheadline: t.subheadline,
-    downloadHint: t.downloadHint,
-    featureTitle: t.feature.title,
-    featureBody: t.feature.body,
-    contact: t.contact,
-  };
-  for (const node of document.querySelectorAll<HTMLElement>('[data-t]')) {
-    node.textContent = text[node.dataset.t!];
-  }
   root.lang = meta.tag;
   root.dir = meta.dir;
   root.dataset.lang = lang;
+  side = meta.dir === 'rtl' ? -1 : 1;
   document.title = `hemû — ${t.headline}`;
+  const text: Record<string, string> = {
+    headline: t.headline,
+    subheadline: t.subheadline,
+    comingSoon: t.comingSoon,
+    downloadHint: t.downloadHint,
+    languageLabel: t.languageLabel,
+    contact: t.contact,
+  };
+  for (const node of document.querySelectorAll<HTMLElement>('[data-t]')) node.textContent = text[node.dataset.t!];
+  caps.forEach((cap, i) => {
+    if (i === 0) return;
+    cap.children[0].textContent = t.steps[i - 1].title;
+    cap.children[1].textContent = t.steps[i - 1].body;
+  });
+  $('#alertTitle').textContent = isolate(t.alert.title);
+  $('#alertBody').textContent = t.alert.body;
+  $('#alertTime').textContent = t.alert.time;
   select.value = lang;
   select.setAttribute('aria-label', t.languageLabel);
   for (const store of document.querySelectorAll<HTMLElement>('[data-store]')) {
     store.setAttribute('aria-label', `${store.dataset.store} — ${t.comingSoon}`);
   }
-  for (const img of document.querySelectorAll<HTMLImageElement>('img[data-screen]')) {
-    const screen = img.dataset.screen as Screen;
-    img.src = screenUrl(screen, lang);
-    img.alt = `hemû ${ALT[screen]} — ${meta.name}`;
-  }
-}
-
-function showLang(lang: Lang) {
-  render(lang);
+  shots.forEach((shot, i) => {
+    const src = screenUrl(STEPS[i].name, lang);
+    const cut = cutFor(i, lang);
+    if (cut) shot.style.setProperty('--cutn', String(cut));
+    for (const img of shot.querySelectorAll('img')) if (img.getAttribute('src') !== src) img.src = src;
+    shot.querySelector<HTMLImageElement>('.bd')!.alt = `hemû — ${i ? t.steps[i - 1].title : t.headline}`;
+  });
+  buildPieces();
   root.classList.remove('lang-pending');
-  setActiveScreen(0);
-  track.scrollTo({ left: 0 });
 }
-
 select.addEventListener('change', () => {
-  const lang = select.value as Lang;
+  lang = select.value as Lang;
   try {
     localStorage.setItem('hemu-lang', lang);
   } catch {
     // Private mode: the choice just will not be remembered.
   }
-  showLang(lang);
+  applyLang();
+  measure();
+  kick();
 });
 
-track.addEventListener('scroll', () => {
-  if (!track.clientWidth) return;
-  const index = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / track.clientWidth)));
-  setActiveScreen(index);
+// ----- scroll -> step, pose, lift -----
+let start = 0;
+let range = 1;
+let cover = 1;
+let raf = 0;
+let last = 0;
+let stepAt = -1e6;
+let intro = !reduced;
+let mx = 0;
+let my = 0;
+let room: number[] = [];
+let sheetRadius = -1;
+let moved = false;
+const cur: Pose = reduced ? [...STILL] : [30, -62, 9, 9, 0.84];
+const vel = [0, 0, 0, 0, 0];
+function measure() {
+  const stick = parseFloat(getComputedStyle(stage).top) || 0;
+  const top = tour.getBoundingClientRect().top + window.scrollY;
+  start = top - stick;
+  // how far the closing card slides over the stage, and the scrolling left for the eight steps
+  cover = Math.max(1, top + tour.offsetHeight - (outro.getBoundingClientRect().top + window.scrollY));
+  range = Math.max(1, tour.offsetHeight - stage.offsetHeight - cover);
+  // room each caption leaves above the phone: the phone grows into it
+  const boxHeight = captions.offsetHeight;
+  const beside = wideMq.matches;
+  room = caps.map((cap) => {
+    const lastLine = cap.lastElementChild as HTMLElement;
+    return beside ? 0 : clamp(boxHeight - lastLine.offsetTop - lastLine.offsetHeight - 16, 0, 60);
+  });
+}
+function goTo(i: number) {
+  window.scrollTo({ top: Math.round(start + ((i ? i + 0.5 : 0) / N) * range), behavior: reduced ? 'auto' : 'smooth' });
+}
+function setStep(i: number, finished: boolean, now: number) {
+  if (i !== active) {
+    if (active > -1) groups[active].el.classList.remove('on');
+    active = i;
+    groups[i].el.classList.add('on');
+    groups[i].last = -1;
+    groups[i].armed = false;
+    caps.forEach((cap, k) => {
+      cap.classList.toggle('is-active', k === i);
+      cap.classList.toggle('is-before', k < i);
+      if (k === i) cap.removeAttribute('aria-hidden');
+      else cap.setAttribute('aria-hidden', 'true');
+    });
+    shots.forEach((shot, k) => {
+      shot.classList.toggle('is-in', k <= i);
+      shot.classList.toggle('near', Math.abs(k - i) < 2);
+      shot.classList.toggle('under', k === i - 1 && STEPS[i].kind === 'push');
+    });
+    root.dataset.step = String(i);
+    stepAt = now;
+  }
+  const tone = finished ? 'orange' : STEPS[i].tone;
+  if (root.dataset.tone !== tone) root.dataset.tone = tone;
+}
+function poseAt(p: number): Pose {
+  const set = wideMq.matches ? WIDE : NARROW;
+  let j = 0;
+  while (j < KEY.length - 2 && p > KEY[j + 1]) j++;
+  const t = smooth(KEY[j], KEY[j + 1], p);
+  return set[j].map((v, k) => v + (set[j + 1][k] - v) * t) as Pose;
+}
+// how far the pieces of step k are lifted at scroll position p (0 … 1): up in the middle of the step, flat at both ends
+const liftAt = (k: number, p: number) =>
+  k === 0 ? 1 - smooth(0.22, 0.7, p) : smooth(k + 0.1, k + 0.42, p) * (1 - smooth(k + 0.6, k + 0.9, p));
+
+function frame(now: number) {
+  raf = 0;
+  const dt = Math.min(64, last ? now - last : 16);
+  last = now;
+  const y = window.scrollY - start;
+  const p = clamp(y / range, 0, 1) * N;
+  const c = clamp((y - range) / cover, 0, 1); // 0 … 1 while the closing card slides over the stage
+  setStep(Math.min(N - 1, Math.floor(p + 1e-4)), c > 0.9, now);
+  const scrolled = window.scrollY > 24;
+  if (scrolled !== moved) {
+    moved = scrolled;
+    if (scrolled) root.dataset.moved = '1';
+    else delete root.dataset.moved;
+  }
+
+  // pose: a spring, slightly under-damped, so the phone arrives at each pose with a little life.
+  // At the very top the phone floats a little.
+  const idle = !reduced && p < 0.02 && !document.hidden;
+  const tgt: Pose = reduced ? [...STILL] : poseAt(p);
+  if (idle && !intro) {
+    tgt[0] += Math.sin(now / 1900) * 1.5;
+    tgt[1] += Math.sin(now / 2700) * 2.6;
+    tgt[3] += Math.sin(now / 2300) * 0.7;
+  }
+  tgt[1] *= side;
+  tgt[2] *= side;
+  if (!reduced) {
+    tgt[1] += mx * 10; // the phone leans toward the pointer
+    tgt[0] -= my * 7;
+    tgt[0] += 15 * c; // and sinks back as the card covers it
+    tgt[3] += 4 * c;
+    tgt[4] *= 1 - 0.1 * c;
+  }
+  const grow = room[active] || 0;
+  tgt[4] *= 1 + (grow * SS) / ph;
+  tgt[3] -= ((grow * SS) / 2 / ph) * 100;
+  const stiff = intro ? 30 : 150;
+  const damp = intro ? 10.5 : 19;
+  const h = dt / 2000;
+  let d = 0;
+  for (let i = 0; i < 5; i++) {
+    if (reduced) {
+      cur[i] = tgt[i];
+      continue;
+    }
+    for (let n = 0; n < 2; n++) {
+      vel[i] += (stiff * (tgt[i] - cur[i]) - damp * vel[i]) * h;
+      cur[i] += vel[i] * h;
+    }
+    d += (Math.abs(tgt[i] - cur[i]) + Math.abs(vel[i]) * 0.06) * (i === 4 ? 100 : 1);
+  }
+  if (intro && d < 0.8) intro = false;
+  const transform = `translate3d(0,${((cur[3] / 100) * ph).toFixed(1)}px,0) rotateX(${cur[0].toFixed(2)}deg) rotateY(${cur[1].toFixed(2)}deg) rotateZ(${cur[2].toFixed(2)}deg) scale(${cur[4].toFixed(4)})`;
+  phone.style.transform = transform;
+  above.style.transform = transform;
+  gloss.style.transform = transform;
+
+  // light: from the upper left, in front. Each frame face brightens as it turns toward it or toward the viewer.
+  const ra = cur[0] * 0.01745;
+  const rb = cur[1] * 0.01745;
+  const rc = cur[2] * 0.01745;
+  const ca = Math.cos(ra);
+  const sa = Math.sin(ra);
+  const cb = Math.cos(rb);
+  const sb = Math.sin(rb);
+  const cc = Math.cos(rc);
+  const sc = Math.sin(rc);
+  for (const face of faces) {
+    const x1 = face.nx * cc - face.ny * sc;
+    const y1 = face.nx * sc + face.ny * cc;
+    const x2 = x1 * cb;
+    const z2 = -x1 * sb;
+    const y3 = y1 * ca - z2 * sa;
+    const z3 = Math.max(0, y1 * sa + z2 * ca);
+    const diffuse = Math.max(0, x2 * -0.4 + y3 * -0.72 + z3 * 0.57);
+    const shown = Math.round(clamp((0.04 + 0.42 * diffuse + 1.5 * z3 * z3 + 0.5 * z3) * SPEC, 0, 0.92) * 50) / 50;
+    if (shown !== face.shown) {
+      face.shown = shown;
+      face.light.style.opacity = String(shown);
+    }
+  }
+  rimA.style.opacity = clamp(0.5 - cur[1] / 44, 0, 1).toFixed(2);
+  rimB.style.opacity = clamp(0.22 + cur[1] / 44, 0, 1).toFixed(2);
+  sheen.style.transform = `translate3d(${(-cur[1] * 1.7 - cur[2]).toFixed(2)}%,${(cur[0] * 0.7).toFixed(2)}%,0)`;
+  veil.style.opacity = (c * 0.34).toFixed(3);
+  const radius = Math.round(28 * (1 - smooth(0.8, 1, c)));
+  if (radius !== sheetRadius) {
+    sheetRadius = radius;
+    outro.style.setProperty('--sheet-r', `${radius}px`);
+  }
+  floor.style.transform = `translate3d(${(-cur[1] * 0.9 * SS).toFixed(1)}px,0,0) scale(${(1 - Math.abs(cur[1]) / 150).toFixed(3)},${(1 - cur[0] / 90).toFixed(3)})`;
+
+  // lift. A copy of each element lies exactly over it, drawn from the start at an opacity nobody can see, so its
+  // picture is ready. The move then has three parts, in this order (and in reverse on the way back):
+  //   1. the copy fades in, still lying flat on the element;  2. under the opaque copy the element is erased;
+  //   3. the copy rises. The element is on screen and in one piece at every moment, so nothing dims, doubles or blinks.
+  const group = groups[active];
+  const since = now - stepAt;
+  const armed = !reduced && !intro && since >= 600 && group.readyAt >= 0 && now - group.readyAt >= 150;
+  if (armed && !group.armed) group.armedAt = now;
+  const lifted = armed ? liftAt(active, p) * smooth(120, 500, now - group.armedAt) : 0;
+  if (armed !== group.armed || Math.abs(lifted - group.last) > 0.002) {
+    group.armed = armed;
+    group.last = lifted;
+    for (const item of group.items) {
+      const z = item.lift * pw * clamp((lifted - 0.1) / 0.9, 0, 1);
+      item.top.style.opacity = Math.max(0.004, smooth(0, 0.05, lifted)).toFixed(3);
+      item.hole.style.opacity = smooth(0.05, 0.1, lifted).toFixed(3);
+      item.top.style.transform = `translateZ(${(0.35 + z).toFixed(2)}px)`;
+      item.shade.style.transform = `translate3d(0,${(z * 0.3).toFixed(1)}px,.2px)`;
+      item.shade.style.opacity = smooth(0.12, 0.6, lifted).toFixed(3);
+    }
+  }
+  if (document.hidden) {
+    last = 0;
+    return;
+  }
+  const settling = (armed && now - group.armedAt < 550) || (!armed && group.readyAt >= 0 && now - group.readyAt < 200);
+  if (idle || intro || d > 0.03 || since < 650 || settling) kick();
+  else last = 0;
+}
+function kick() {
+  if (!raf) raf = requestAnimationFrame(frame);
+}
+
+phone.addEventListener('pointerdown', () => {
+  // a press you can feel
+  vel[4] -= 0.55;
+  vel[0] += 26;
+  kick();
+});
+phone.addEventListener('click', () => {
+  if (active < N - 1) goTo(active + 1);
+  else outro.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+});
+window.addEventListener('scroll', kick, { passive: true });
+if (!reduced && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
+  stage.addEventListener(
+    'pointermove',
+    (event) => {
+      const box = stage.getBoundingClientRect();
+      mx = (event.clientX - box.left) / box.width - 0.5;
+      my = (event.clientY - box.top) / box.height - 0.5;
+      kick();
+    },
+    { passive: true },
+  );
+  stage.addEventListener('pointerleave', () => {
+    mx = my = 0;
+    kick();
+  });
+}
+const refit = () => {
+  measure();
+  buildBody();
+  if (active > -1) groups[active].last = -1;
+  kick();
+};
+window.addEventListener('resize', refit);
+window.addEventListener('load', refit);
+new ResizeObserver(refit).observe(area);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) kick();
 });
 
-dots.forEach((dot, index) =>
-  dot.addEventListener('click', () => {
-    setActiveScreen(index);
-    track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
-  }),
-);
-
-showLang(pageLang());
+applyLang();
+measure();
+buildBody();
+cur[1] *= side;
+cur[2] *= side;
+frame(performance.now());
+// have every screen decoded before it is needed, so nothing pops in while it slides
+for (const img of screen.querySelectorAll('img')) img.decode().catch(() => {});
