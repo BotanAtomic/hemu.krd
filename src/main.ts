@@ -404,7 +404,10 @@ let my = 0;
 let room: number[] = [];
 let sheetRadius = -1;
 let moved = false;
-const cur: Pose = reduced ? [...STILL] : [30, -62, 9, 9, 0.84];
+// where the phone comes from: on a phone it rises from below the first screen, elsewhere it swings in
+const cur: Pose = reduced ? [...STILL] : wideMq.matches ? [30, -62, 9, 9, 0.84] : [8, 0, 0, 110, 1];
+// while the opening card is up (index.html .splash) the phone waits where it comes from
+let holding = root.classList.contains('splashing');
 const vel = [0, 0, 0, 0, 0];
 // Where the page rests on step i: the top for the first, then the middle of each step, where the phone has turned to
 // face the caption.
@@ -557,13 +560,14 @@ function frame(now: number) {
       cur[i] = tgt[i];
       continue;
     }
+    if (holding) continue;
     for (let n = 0; n < 2; n++) {
       vel[i] += (stiff * (tgt[i] - cur[i]) - damp * vel[i]) * h;
       cur[i] += vel[i] * h;
     }
     d += (Math.abs(tgt[i] - cur[i]) + Math.abs(vel[i]) * 0.06) * (i === 4 ? 100 : 1);
   }
-  if (intro && d < 0.8) intro = false;
+  if (intro && !holding && d < 0.8) intro = false;
   const transform = `translate3d(0,${((cur[3] / 100) * ph).toFixed(1)}px,0) rotateX(${cur[0].toFixed(2)}deg) rotateY(${cur[1].toFixed(2)}deg) rotateZ(${cur[2].toFixed(2)}deg) scale(${cur[4].toFixed(4)})`;
   phone.style.transform = transform;
   above.style.transform = transform;
@@ -631,7 +635,7 @@ function frame(now: number) {
     return;
   }
   const settling = (armed && now - group.armedAt < 550) || (!armed && group.readyAt >= 0 && now - group.readyAt < 200);
-  if (intro || d > 0.03 || since < 650 || settling || waiting) kick();
+  if (!holding && (intro || d > 0.03 || since < 650 || settling || waiting)) kick();
   else last = 0;
 }
 function kick() {
@@ -696,3 +700,31 @@ cur[1] *= side;
 cur[2] *= side;
 frame(performance.now());
 ready[shown].then(() => screen.classList.remove('wait'));
+
+// ----- the opening (index.html .splash, put up by /lang.js) -----
+// The wordmark fills in while the first screen and, for left-to-right text, the headline's font arrive: at most four
+// seconds, and at least 0.7 s from the start so that the fill is seen. Then it fills up, the card fades away, and the
+// first screen comes in under it: the words rise, the listings settle and the phone comes up.
+if (holding) {
+  root.classList.add('entering');
+  const after = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const font = root.dir === 'ltr' && document.fonts ? document.fonts.load('700 1em Unbounded').catch(() => []) : [];
+  Promise.race([Promise.all([ready[shown], font]), after(4000)])
+    .then(() => after(reduced ? 0 : Math.max(0, 700 - performance.now())))
+    .then(() => {
+      const fill = document.getElementById('spFill');
+      if (!fill || reduced) return undefined;
+      // from wherever the fill has got to
+      fill.style.clipPath = getComputedStyle(fill).clipPath;
+      fill.style.animation = 'none';
+      void fill.getBoundingClientRect();
+      fill.style.transition = 'clip-path .28s ease-out';
+      fill.style.clipPath = 'inset(0 0 0 0)';
+      return after(330);
+    })
+    .then(() => {
+      root.classList.remove('splashing', 'entering');
+      holding = false;
+      kick();
+    });
+}

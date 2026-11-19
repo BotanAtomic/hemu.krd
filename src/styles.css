@@ -389,3 +389,28 @@ html[data-moved] .hint{ opacity:0 }
   .f4{ --r:-9deg; inset-inline-end:-30px; top:62% }
   .stage[data-step]:not([data-step="0"]) .fl{ --s:.86; opacity:0; visibility:hidden; transition:opacity .25s ease, transform .4s var(--ease), visibility 0s .4s }
 }
+
+/* ---------- the opening ---------- */
+/* While the first screen's picture and its font arrive, a card over everything shows the wordmark filling in, grey to
+   ink, its û turning orange last. /lang.js puts it up (a browser without scripts never sees it) and src/main.ts lifts
+   it; should that never happen, it leaves by itself after eight seconds. Under it the first screen waits to come in. */
+.splash{ position:fixed; inset:0; z-index:20; display:grid; place-items:center; background:var(--canvas); pointer-events:none;
+  opacity:0; visibility:hidden; transition:opacity .5s ease, visibility 0s .5s }
+.splashing .splash{ opacity:1; visibility:visible; transition:none; animation:unstick 0s 8s forwards }
+@keyframes unstick{ to{ opacity:0; visibility:hidden } }
+.splash svg{ grid-area:1 / 1; display:block; width:min(44vw,210px); height:auto; aspect-ratio:341.2 / 83.2 }
+.sp-base{ color:#E3DFD9; --wm-u:#E3DFD9 }
+.sp-fill{ color:var(--ink); --wm-u:var(--orange); clip-path:inset(0 100% 0 0); animation:fill 2.4s cubic-bezier(.25,.8,.3,1) .1s forwards }
+@keyframes fill{ to{ clip-path:inset(0 16% 0 0) } }
+.bar{ transition:opacity .5s ease .15s }
+.entering .bar{ opacity:0 }
+.entering .cap.hero > *{ opacity:0; transform:translate3d(0,18px,0) }
+@media (max-width:859px) and (orientation:portrait), (max-width:599px){
+  .entering .fl{ --s:.7; opacity:0 }
+  .f2{ transition-delay:.06s } .f3{ transition-delay:.12s } .f4{ transition-delay:.18s }
+}
+@media (prefers-reduced-motion:reduce){
+  .splash,.bar{ transition:none !important }
+  .sp-fill{ animation:none !important; clip-path:none !important }
+}
+
