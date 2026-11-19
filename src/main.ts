@@ -15,25 +15,39 @@ const screenUrl = (name: string, lang: Lang) => screenUrls[`./assets/screens/${n
 type Kind = 'modal' | 'sheet' | 'push';
 type Tone = 'canvas' | 'orange' | 'tint' | 'night';
 interface Step {
+  /** the app screen: src/assets/screens/<name>-<language>.webp */
   name: string;
+  /** its place in the generated lists (captions in src/translations.ts, lifting parts in src/pieces.ts) */
+  at: number;
   tone: Tone;
   kind?: Kind;
-  /** Where the part that moves begins, in % of the screen height: under the status bar, or the top of the sheet. */
+  /** the step whose screen this one is shown over, as the app would */
+  over?: number;
+  /** Where the part that moves begins, in % of the screen height: under the status bar, or the top of the sheet. A
+   *  screen that covers everything (the camera) moves whole. */
   cut?: number;
+  /** false: nothing lifts off this screen */
+  lift?: boolean;
 }
+// The tour follows the app's own navigation, so that every screen arrives the way it would on a phone: the city sheet
+// rises over Home (its picture is drawn over Home), the Audi from Home's feed opens, then its seller's profile, then a
+// chat with him, then saved searches, the filter sheet over them, and the camera, which covers everything.
 const STEPS: Step[] = [
-  { name: '01-home', tone: 'canvas' },
-  { name: '02-sell', kind: 'modal', tone: 'orange', cut: 5.9 },
-  { name: '03-filters', kind: 'sheet', tone: 'canvas', cut: 7.5 },
-  { name: '04-offers', kind: 'push', tone: 'tint', cut: 5.9 },
-  { name: '05-listing', kind: 'push', tone: 'canvas', cut: 5.9 },
-  { name: '06-alerts', kind: 'push', tone: 'night', cut: 5.9 },
-  { name: '07-follow', kind: 'push', tone: 'canvas', cut: 5.9 },
-  { name: '08-cities', kind: 'sheet', tone: 'tint', cut: 7.7 },
+  { name: '01-home', at: 0, tone: 'canvas' },
+  { name: '08-cities', at: 7, kind: 'sheet', over: 0, tone: 'tint', cut: 7.7 },
+  { name: '05-listing', at: 4, kind: 'push', over: 0, tone: 'canvas', cut: 5.9 },
+  { name: '07-follow', at: 6, kind: 'push', over: 2, tone: 'canvas', cut: 5.9 },
+  { name: '04-offers', at: 3, kind: 'push', over: 3, tone: 'tint', cut: 5.9 },
+  { name: '06-alerts', at: 5, kind: 'push', over: 4, tone: 'night', cut: 5.9 },
+  { name: '03-filters', at: 2, kind: 'sheet', over: 5, tone: 'canvas', cut: 7.5 },
+  { name: '02-sell', at: 1, kind: 'modal', over: 6, tone: 'orange', lift: false },
 ];
 // The English city sheet starts lower than the others.
-const cutFor = (i: number, lang: Lang) => (i === 7 && lang === 'en' ? 11.7 : STEPS[i].cut);
+const cutFor = (step: Step, lang: Lang) => (step.name === '08-cities' && lang === 'en' ? 11.7 : step.cut);
+// the screens on the phone at step i, from the bottom up: those it is shown over, then its own
+const stackOf = (i: number): number[] => (i < 0 ? [] : [...stackOf(STEPS[i].over ?? -1), i]);
 const N = STEPS.length;
+const stacks = STEPS.map((_, i) => stackOf(i));
 // Without resting places (a wheel or a trackpad), a scroll left to itself runs on for this many seconds' worth of its
 // speed before it stops: momentum loses 0.2 % of its speed every millisecond. The speed read in frame() runs a little
 // late, which leaves a small margin.
@@ -253,10 +267,11 @@ function loadScreens() {
 
 function buildPieces() {
   piecesEl.textContent = '';
-  groups = PIECES[lang].map((list, step) => {
+  groups = STEPS.map((at, step) => {
+    const list = at.lift === false ? [] : PIECES[lang][at.at];
     const el = document.createElement('div');
     el.className = 'grp';
-    const url = screenUrl(STEPS[step].name, lang);
+    const url = screenUrl(at.name, lang);
     const part = (v: number) => `calc(var(--sw) * ${(v / 100).toFixed(5)})`;
     const items = list.map(([x, y, w, h, r, lift, colour, margin, feather, down]) => {
       const pc = document.createElement('div');
@@ -314,8 +329,8 @@ function applyLang() {
   for (const node of document.querySelectorAll<HTMLElement>('[data-t]')) node.textContent = text[node.dataset.t!];
   caps.forEach((cap, i) => {
     if (i === 0) return;
-    cap.children[0].textContent = t.steps[i - 1].title;
-    cap.children[1].textContent = t.steps[i - 1].body;
+    cap.children[0].textContent = t.steps[STEPS[i].at - 1].title;
+    cap.children[1].textContent = t.steps[STEPS[i].at - 1].body;
   });
   $('#alertTitle').textContent = isolate(t.alert.title);
   $('#alertBody').textContent = t.alert.body;
@@ -327,9 +342,9 @@ function applyLang() {
     store.setAttribute('aria-label', `${store.dataset.store} — ${t.comingSoon}`);
   }
   shots.forEach((shot, i) => {
-    const cut = cutFor(i, lang);
+    const cut = cutFor(STEPS[i], lang);
     if (cut) shot.style.setProperty('--cutn', String(cut));
-    shot.querySelector<HTMLImageElement>('.bd')!.alt = `hemû — ${i ? t.steps[i - 1].title : t.headline}`;
+    shot.querySelector<HTMLImageElement>('.bd')!.alt = `hemû — ${i ? t.steps[STEPS[i].at - 1].title : t.headline}`;
   });
   loadScreens();
   buildPieces();
@@ -434,28 +449,32 @@ function show(i: number, now: number) {
     if (k === i) cap.removeAttribute('aria-hidden');
     else cap.setAttribute('aria-hidden', 'true');
   });
-  // One screen moves: the new one comes in over the screen on show, or the screen on show leaves and uncovers the new
-  // one. Screens skipped on the way stay out of it, and anything else that has to change place does so at once, unseen
-  // under the screen on show. On the first frame nothing moves.
-  const mover = from < 0 ? -1 : Math.max(i, from);
-  let beneath = -1;
+  // The phone shows this step's stack of screens. Of those that change, the top one arriving and the top one leaving
+  // move, as the app would move them (a sheet closes as the next screen opens); any other comes or goes at once, unseen
+  // under them. On the first frame nothing moves.
+  const stack = stacks[i];
+  const changing = shots.map((shot, k) => stack.includes(k) !== shot.classList.contains('is-in'));
+  const arriving = from < 0 ? -1 : Math.max(-1, ...stack.filter((k) => changing[k]));
+  const leaving = from < 0 ? -1 : Math.max(-1, ...shots.map((_, k) => (changing[k] && !stack.includes(k) ? k : -1)));
+  const beneath = STEPS[i].over ?? -1;
+  // a sheet or the camera closing as a screen is pushed: the push waits a moment, so it reads as one after the other
+  const late = arriving > -1 && leaving > -1 && STEPS[arriving].kind === 'push' && STEPS[leaving].kind !== 'push';
+  keep = [...new Set([i, beneath, from, i - 1, STEPS[i - 1]?.over ?? -1, i + 1, STEPS[i + 1]?.over ?? -1])].filter((k) => k > -1 && k < N);
   shots.forEach((shot, k) => {
-    const was = shot.classList.contains('is-in');
-    const is = k === i || (k < i && was);
-    if (is && k < i) beneath = k;
-    shot.classList.toggle('now', is !== was && k !== mover);
-    shot.classList.toggle('is-in', is);
-    shot.classList.toggle('near', Math.abs(k - i) < 2);
+    shot.classList.toggle('now', changing[k] && k !== arriving && k !== leaving);
+    shot.classList.toggle('late', late && k === arriving);
+    shot.classList.toggle('is-in', stack.includes(k));
+    // the screen right under a pushed one gives way a little
+    shot.classList.toggle('under', k === beneath && STEPS[i].kind === 'push');
+    shot.classList.toggle('near', keep.includes(k));
   });
-  // the screen right under a pushed one gives way a little
-  shots.forEach((shot, k) => shot.classList.toggle('under', k === beneath && STEPS[i].kind === 'push'));
-  // Screens covered by the one on show are not drawn at all once it has arrived. This one stays, with the one under it
-  // (seen beside a pushed screen or through a sheet's shade), the one just left, and the next one, ready to come in.
-  keep = [i, beneath, from, i + 1];
-  for (const k of keep) shots[k]?.classList.remove('off');
+  // Screens covered by the one on show are not drawn at all once it has arrived. Drawn stay this one, the one it is
+  // shown over, the one just left, and the screens of the steps before and after, ready to move.
+  for (const k of keep) shots[k].classList.remove('off');
   clearTimeout(tidy);
   tidy = window.setTimeout(() => shots.forEach((shot, k) => shot.classList.toggle('off', !keep.includes(k))), 800);
   stage.dataset.step = String(i);
+  stage.dataset.screen = STEPS[i].name;
 }
 function poseAt(p: number): Pose {
   const set = wideMq.matches ? WIDE : NARROW;
