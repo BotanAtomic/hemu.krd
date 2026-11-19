@@ -217,6 +217,37 @@ let groups: Group[] = [];
 let shown = -1; // the step on show: its screen, caption and ground
 let side = 1;
 let lang: Lang = pageLang();
+
+// ----- screens, downloaded in the order they are needed -----
+// The language's first screen comes first and alone, then each next one when the one before it has arrived: the first
+// screen does not share the connection with seven others, and the next one is in before the first swipe. A step put on
+// show before its turn jumps the queue. ready[i] settles once screen i is downloaded and decoded.
+let ready: Promise<void>[] = [];
+const settle: (() => void)[] = [];
+let asked: boolean[] = [];
+function ask(i: number) {
+  if (i < 0 || i >= N || asked[i]) return;
+  asked[i] = true;
+  const src = screenUrl(STEPS[i].name, lang);
+  const imgs = [...shots[i].querySelectorAll('img')];
+  for (const img of imgs) {
+    img.setAttribute('fetchpriority', i === Math.max(0, shown) ? 'high' : 'low');
+    if (img.getAttribute('src') !== src) img.src = src;
+  }
+  const done = settle[i];
+  const next = () => {
+    done();
+    // unless a change of language has started a queue of its own since
+    if (settle[i] === done) ask(asked.indexOf(false));
+  };
+  imgs[imgs.length - 1].decode().then(next, next);
+}
+function loadScreens() {
+  ready = shots.map((_, i) => new Promise<void>((resolve) => (settle[i] = resolve)));
+  asked = shots.map(() => false);
+  ask(Math.max(0, shown));
+}
+
 function buildPieces() {
   piecesEl.textContent = '';
   groups = PIECES[lang].map((list, step) => {
@@ -247,14 +278,11 @@ function buildPieces() {
     piecesEl.appendChild(el);
     const group: Group = { el, items, last: -1, armed: false, armedAt: 0, readyAt: list.length ? -1 : 0 };
     if (list.length) {
-      // the copies draw the same picture as the screen: they wait until it is loaded and decoded
-      const image = new Image();
-      const done = () => {
+      // the copies draw the same picture as the screen: they wait until it is downloaded and decoded
+      ready[step].then(() => {
         group.readyAt = performance.now();
         kick();
-      };
-      image.onload = () => image.decode().then(done, done);
-      image.src = url;
+      });
     }
     return group;
   });
@@ -296,12 +324,11 @@ function applyLang() {
     store.setAttribute('aria-label', `${store.dataset.store} — ${t.comingSoon}`);
   }
   shots.forEach((shot, i) => {
-    const src = screenUrl(STEPS[i].name, lang);
     const cut = cutFor(i, lang);
     if (cut) shot.style.setProperty('--cutn', String(cut));
-    for (const img of shot.querySelectorAll('img')) if (img.getAttribute('src') !== src) img.src = src;
     shot.querySelector<HTMLImageElement>('.bd')!.alt = `hemû — ${i ? t.steps[i - 1].title : t.headline}`;
   });
+  loadScreens();
   buildPieces();
   root.classList.remove('lang-pending');
 }
@@ -388,6 +415,9 @@ function goTo(i: number) {
 function show(i: number, now: number) {
   const from = shown;
   shown = i;
+  // this screen now, and the next one before it is needed (not on the first frame: the first screen comes alone)
+  ask(i);
+  if (from > -1) ask(i + 1);
   stepAt = now;
   eager = 0;
   if (from > -1) groups[from].el.classList.remove('on');
@@ -616,6 +646,9 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) kick();
 });
 
+// index.html shows the Soranî Home screen. In another language the phone's screen stays dark until its own screen has
+// arrived, instead of showing the Soranî one and then swapping it.
+if (shots[0].querySelector('img')!.getAttribute('src') !== screenUrl(STEPS[0].name, lang)) screen.classList.add('wait');
 applyLang();
 measure();
 root.classList.add('steps');
@@ -623,5 +656,4 @@ buildBody();
 cur[1] *= side;
 cur[2] *= side;
 frame(performance.now());
-// have every screen decoded before it is needed, so nothing pops in while it slides
-for (const img of screen.querySelectorAll('img')) img.decode().catch(() => {});
+ready[shown].then(() => screen.classList.remove('wait'));
