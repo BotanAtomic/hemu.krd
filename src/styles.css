@@ -26,6 +26,15 @@ img{ max-width:100% }
   color-scheme:light; background:var(--canvas); transition:background-color 0s linear .22s;
 }
 @supports (height:1svh){ :root{ --step:125svh } }
+/* On a touch screen the page comes to rest only on a step or at its end (.rest, .outro): a swipe is one step, and a
+   step is one screen long. html.steps is set by the script once the resting places are in place: a browser that
+   brought the page to rest before they existed would find only the end of the page. (A wheel or a trackpad keeps
+   scrolling freely: browsers handle those less predictably on a page that rests on steps.) */
+@media (pointer:coarse){
+  :root{ --step:100vh }
+  @supports (height:1svh){ :root{ --step:100svh } }
+  html.steps{ scroll-snap-type:y mandatory }
+}
 
 *,*::before,*::after{ box-sizing:border-box }
 body{ color:var(--ink); font-family:var(--ui);
@@ -46,6 +55,7 @@ a{ color:inherit }
 /* ---------- the pinned stage ---------- */
 /* 8 steps of scrolling, the stage itself, and one more screen during which the closing card slides over the stage */
 .tour{ position:relative; height:calc(8 * var(--step) + 200vh); overflow-x:clip }
+.rest{ position:absolute; left:0; top:0; width:1px; height:1px; pointer-events:none; scroll-snap-align:start; scroll-snap-stop:always }
 @supports (height:1svh){ .tour{ height:calc(8 * var(--step) + 200svh) } }
 .stage{ position:sticky; top:var(--st); height:calc(100vh - var(--st) - var(--sb)); overflow:hidden;
   display:grid; grid-template-rows:auto auto minmax(0,1fr); grid-template-columns:minmax(0,1fr);
@@ -97,6 +107,10 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 
 /* ---------- the phone, in 3D ---------- */
 .phone-area{ position:relative; min-height:0; margin-top:-34px }
+/* The phone is a picture to look at and tap, not a document: a long press neither selects it nor opens the image menu
+   (save, copy), a press and drag never lifts a screenshot out of it, and a tap leaves no grey flash. */
+.phone-area{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent }
+.phone-area img{ pointer-events:none; -webkit-user-drag:none }
 /* --ss: the phone is built this many times larger than it is shown and scaled back down (set in the script, see there) */
 .rig{ --ss:1; --pw:230px; --pt:18px; --sheen:.2; --back:#8F8A82; --chamfer:rgba(236,230,220,.75); position:absolute; inset:calc((1 - var(--ss)) * 50%); z-index:1; display:grid; grid-template:100% / 100%; place-items:center;
   perspective:1080px; perspective-origin:50% 46%; transform:scale(calc(1 / var(--ss))) }
@@ -186,7 +200,7 @@ html[data-moved] .hint{ opacity:0 }
 @keyframes bob{ 0%,100%{ transform:translateY(-3px) } 50%{ transform:translateY(4px) } }
 
 /* ---------- the closing brand card ---------- */
-.outro{ position:relative; z-index:2; margin-top:-100vh; min-height:100vh; background:var(--orange); color:var(--ink); padding:0 var(--gr) 22px var(--gl);
+.outro{ position:relative; z-index:2; margin-top:-100vh; min-height:100vh; background:var(--orange); color:var(--ink); padding:0 var(--gr) 22px var(--gl); scroll-snap-align:end; scroll-snap-stop:always;
   display:flex; flex-direction:column; align-items:center; text-align:center; border-radius:var(--sheet-r, 28px) var(--sheet-r, 28px) 0 0; box-shadow:0 -20px 50px -18px rgba(40,18,0,.45) }
 @supports (height:1svh){ .outro{ margin-top:-100svh; min-height:100svh } }
 .outro-main{ margin-block:auto; padding-block:44px 30px; width:100%; display:flex; flex-direction:column; align-items:center; gap:18px }

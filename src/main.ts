@@ -34,6 +34,10 @@ const STEPS: Step[] = [
 // The English city sheet starts lower than the others.
 const cutFor = (i: number, lang: Lang) => (i === 7 && lang === 'en' ? 11.7 : STEPS[i].cut);
 const N = STEPS.length;
+// Without resting places (a wheel or a trackpad), a scroll left to itself runs on for this many seconds' worth of its
+// speed before it stops: momentum loses 0.2 % of its speed every millisecond. The speed read in frame() runs a little
+// late, which leaves a small margin.
+const COAST = 0.5;
 // The ground of each tone, as numbers so that two of them can be mixed. The first is --canvas in the style sheet,
 // which paints the page before this script runs; the second is --orange.
 const GROUND: Record<Tone, number[]> = {
@@ -42,9 +46,6 @@ const GROUND: Record<Tone, number[]> = {
   tint: [253, 238, 224],
   night: [20, 19, 18],
 };
-// A scroll left to itself runs on for this many seconds' worth of its speed before it stops: a touch fling loses
-// 0.2 % of its speed every millisecond. The speed read in frame() runs a little late, which leaves a small margin.
-const COAST = 0.5;
 
 // The phone's pose at rest in each step: [tilt back, turn, roll (degrees), drop (% of its height), scale].
 // Narrow screens swing left and right; wide screens keep the phone turned toward the words.
@@ -82,6 +83,8 @@ const select = $<HTMLSelectElement>('#language');
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wideMq = window.matchMedia('(min-width:860px), (orientation:landscape) and (min-width:600px)');
+// a touch screen: the page rests on each step (see rests and styles.css)
+const resting = window.matchMedia('(pointer:coarse)');
 // Chromium chooses the resolution of each surface in a 3D scene by rounding how large it currently looks. Two surfaces
 // side by side can therefore come out at different sharpness, and one can snap sharper or softer while the phone turns
 // (seen as a flicker on small detailed things like the camera thumbnails). Building the phone twice as large and scaling
@@ -116,6 +119,17 @@ STEPS.forEach((step, i) => {
     '<img class="st" width="780" height="1692" alt="" decoding="async"><img class="bd" width="780" height="1692" alt="" decoding="async">';
   screen.appendChild(shot);
   shots.push(shot);
+});
+
+// ----- where the page comes to rest (touch screens) -----
+// One resting place per step (placed in measure()), and the end of the page. The browser always brings the page to rest
+// on one of them and never passes one by: a swipe moves exactly one step, which then plays out in full. No swipe that
+// only half-moves, no steps skipped by a fling.
+const rests = STEPS.map(() => {
+  const rest = document.createElement('i');
+  rest.className = 'rest';
+  tour.appendChild(rest);
+  return rest;
 });
 
 // ----- the phone body: a frame with thickness, built from flat faces around the rounded outline -----
@@ -200,7 +214,6 @@ interface Group {
   readyAt: number;
 }
 let groups: Group[] = [];
-let active = -1; // the step the scroll is in
 let shown = -1; // the step on show: its screen, caption and ground
 let side = 1;
 let lang: Lang = pageLang();
@@ -337,7 +350,7 @@ let raf = 0;
 let last = 0;
 let lastY = 0;
 let speed = 0; // how fast the page is scrolling, in steps per second (down is positive)
-let eager = 0; // until when a tap on the phone lets the next step come on show at any speed
+let eager = 0; // until when a click on the phone lets the next step come on show at any speed
 let stepAt = -1e6;
 let intro = !reduced;
 let mx = 0;
@@ -347,6 +360,9 @@ let sheetRadius = -1;
 let moved = false;
 const cur: Pose = reduced ? [...STILL] : [30, -62, 9, 9, 0.84];
 const vel = [0, 0, 0, 0, 0];
+// Where the page rests on step i: the top for the first, then the middle of each step, where the phone has turned to
+// face the caption.
+const restAt = (i: number) => Math.round(start + ((i ? i + 0.5 : 0) / N) * range);
 function measure() {
   const stick = parseFloat(getComputedStyle(stage).top) || 0;
   const top = tour.getBoundingClientRect().top + window.scrollY;
@@ -354,6 +370,9 @@ function measure() {
   // how far the closing card slides over the stage, and the scrolling left for the eight steps
   cover = Math.max(1, top + tour.offsetHeight - (outro.getBoundingClientRect().top + window.scrollY));
   range = Math.max(1, tour.offsetHeight - stage.offsetHeight - cover);
+  rests.forEach((rest, i) => {
+    rest.style.top = `${restAt(i) - top}px`;
+  });
   // room each caption leaves above the phone: the phone grows into it
   const boxHeight = captions.offsetHeight;
   const beside = wideMq.matches;
@@ -363,7 +382,7 @@ function measure() {
   });
 }
 function goTo(i: number) {
-  window.scrollTo({ top: Math.round(start + ((i ? i + 0.5 : 0) / N) * range), behavior: reduced ? 'auto' : 'smooth' });
+  window.scrollTo({ top: restAt(i), behavior: reduced ? 'auto' : 'smooth' });
 }
 // Puts step i on show: its caption, its screen, its lifting pieces (the ground follows in frame()).
 function show(i: number, now: number) {
@@ -421,16 +440,15 @@ function frame(now: number) {
   const c = clamp((y - range) / cover, 0, 1); // 0 … 1 while the closing card slides over the stage
   // scroll speed over about the last sixteenth of a second. One frame cannot count for more than eight steps per
   // second, so a jump straight to another place in the page does not pass for a long fast scroll.
-  const stride = range / N;
-  speed += (clamp(((y - lastY) / dt / stride) * 1000, -8, 8) - speed) * (1 - Math.exp(-dt / 60));
+  speed += (clamp(((y - lastY) / dt / (range / N)) * 1000, -8, 8) - speed) * (1 - Math.exp(-dt / 60));
   lastY = y;
-  // A step comes on show once the scroll is in it and is going to stop in it. A page flung through several steps
-  // shows the one it lands on, in a single change, and nothing of what it passed on the way: no ground, caption or
-  // screen starts to arrive only to be replaced a moment later.
-  active = Math.min(N - 1, Math.floor(p + 1e-4));
+  // On a touch screen the page rests on steps, so a swipe crosses one step, half-way through its move: it comes on
+  // show at once. Elsewhere a step comes on show once the scroll is in it and is going to stop in it: a page flung
+  // through several steps shows the one it lands on, in a single change, and nothing of what it passed on the way.
+  const step = Math.min(N - 1, Math.floor(p + 1e-4));
   const landing = clamp(Math.floor(p + speed * COAST + 1e-4), 0, N - 1);
-  if (active !== shown && (first || landing === active || now < eager)) show(active, now);
-  const waiting = active !== shown;
+  if (step !== shown && (first || resting.matches || landing === step || now < eager)) show(step, now);
+  const waiting = step !== shown;
   // when the closing card is nearly up, what is left of the stage joins it
   setTone(c > 0.9 ? 'orange' : STEPS[shown].tone, !reduced && !first);
   const scrolled = window.scrollY > 24;
@@ -550,16 +568,22 @@ function kick() {
   if (!raf) raf = requestAnimationFrame(frame);
 }
 
-phone.addEventListener('pointerdown', () => {
-  // a press you can feel
+// A press you can feel. A finger also lands on the phone just to scroll the page: on a touch screen only a tap presses.
+const press = () => {
   vel[4] -= 0.55;
   vel[0] += 26;
   kick();
+};
+phone.addEventListener('pointerdown', (event) => {
+  if (event.pointerType !== 'touch') press();
+});
+phone.addEventListener('pointerup', (event) => {
+  if (event.pointerType === 'touch') press();
 });
 phone.addEventListener('click', () => {
-  if (active < N - 1) {
+  if (shown < N - 1) {
     eager = performance.now() + 1500;
-    goTo(active + 1);
+    goTo(shown + 1);
   } else outro.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
 });
 window.addEventListener('scroll', kick, { passive: true });
@@ -594,6 +618,7 @@ document.addEventListener('visibilitychange', () => {
 
 applyLang();
 measure();
+root.classList.add('steps');
 buildBody();
 cur[1] *= side;
 cur[2] *= side;
