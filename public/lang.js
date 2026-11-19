@@ -29,6 +29,11 @@
   root.lang = lang;
   root.dir = rtl[lang] ? 'rtl' : 'ltr';
   root.setAttribute('data-lang', lang);
+  // The visitor's own store, chosen before first paint: an iPhone or an iPad sees only the App Store, an Android phone
+  // only Google Play, anything else both.
+  var ua = navigator.userAgent;
+  var os = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : '';
+  if (os) root.setAttribute('data-os', os);
   // index.html is drawn in Sorani; hide its text until src/main.ts has
   // translated it, so nobody sees the wrong language flash.
   if (lang !== 'ckb') root.className += ' lang-pending';

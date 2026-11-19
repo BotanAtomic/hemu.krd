@@ -34,13 +34,13 @@ interface Step {
 // camera covers everything.
 const STEPS: Step[] = [
   { name: '01-home', at: 0, tone: 'canvas' },
-  { name: '08-cities', at: 7, kind: 'sheet', over: 0, tone: 'tint', cut: 7.7 },
+  { name: '08-cities', at: 7, kind: 'sheet', over: 0, tone: 'canvas', cut: 7.7 },
   { name: '03-filters', at: 2, kind: 'sheet', over: 0, tone: 'canvas', cut: 7.5 },
-  { name: '09-results', at: 5, kind: 'tab', tone: 'night', cut: 5.9 },
+  { name: '09-results', at: 5, kind: 'tab', tone: 'canvas', cut: 5.9 },
   { name: '05-listing', at: 4, kind: 'push', over: 3, tone: 'canvas', cut: 5.9 },
-  { name: '10-chat', at: 3, kind: 'push', over: 4, tone: 'tint', cut: 5.9 },
+  { name: '10-chat', at: 3, kind: 'push', over: 4, tone: 'canvas', cut: 5.9 },
   { name: '11-seller', at: 6, kind: 'push', over: 5, tone: 'canvas', cut: 5.9 },
-  { name: '02-sell', at: 1, kind: 'modal', over: 6, tone: 'orange' },
+  { name: '02-sell', at: 1, kind: 'modal', over: 6, tone: 'canvas' },
 ];
 // The English city sheet starts lower than the others.
 const cutFor = (step: Step, lang: Lang) => (step.name === '08-cities' && lang === 'en' ? 11.7 : step.cut);
@@ -62,11 +62,12 @@ const GROUND: Record<Tone, number[]> = {
 };
 
 // The phone's pose at rest in each step: [tilt back, turn, roll (degrees), drop (% of its height), scale].
-// Narrow screens swing left and right; wide screens keep the phone turned toward the words.
+// It stays turned the same way and moves little, so the eye stays on the screen. On a phone it waits low and facing
+// front under the first screen's words, its top showing, and rises when the tour starts.
 type Pose = [number, number, number, number, number];
 const KEY = [0, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8];
-const NARROW: Pose[] = [[14, -24, 4, 0, 1], [8, 22, -3, 0, 1], [13, -19, 2, 0, 1], [6, 24, -2, 0, 1], [12, -22, 3, 0, 1], [21, 15, -4, 1.5, 0.97], [8, -21, 2, 0, 1], [12, 18, -2, 0, 1], [9, 7, -1, 0, 1]];
-const WIDE: Pose[] = [[12, -29, 3, 0, 1], [7, -15, -2, 0, 1], [13, -28, 2, 0, 1], [6, -14, -2, 0, 1], [12, -27, 3, 0, 1], [21, -17, -3, 1.5, 0.97], [8, -26, 2, 0, 1], [12, -15, -2, 0, 1], [8, -12, 0, 0, 1]];
+const NARROW: Pose[] = [[6, 0, 0, 62, 1], [10, -10, 2, 0, 1], [8, -7, 1, 0, 1], [11, -11, 2, 0, 1], [8, -8, 1, 0, 1], [10, -10, 2, 0, 1], [8, -7, 1, 0, 1], [10, -10, 2, 0, 1], [8, -6, 1, 0, 1]];
+const WIDE: Pose[] = [[10, -16, 2, 0, 1], [8, -12, -1, 0, 1], [11, -15, 2, 0, 1], [7, -11, -1, 0, 1], [10, -15, 2, 0, 1], [9, -12, -1, 0, 1], [8, -15, 2, 0, 1], [10, -12, -1, 0, 1], [8, -10, 0, 0, 1]];
 const STILL: Pose = [8, -14, 2, 0, 1];
 // Frame colour (titanium) and how strongly it catches the light.
 const METAL = [196, 189, 178];

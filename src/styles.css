@@ -13,6 +13,8 @@ img{ max-width:100% }
 @property --wm-u{ syntax:"<color>"; inherits:true; initial-value:#F37C20 }
 :root{
   --canvas:#F5F4F1; --orange:#F37C20; --ink:#1A1A1A; --muted:#57534E;
+  /* hemû orange darkened for headings on the canvas (3.9:1, enough for large text) */
+  --orange-ink:#C9580B;
   /* how long the ground takes to change colour. What is written on it changes colour quickly, at the moment the ground
      is half-way: dark writing turning light at the ground's own pace would vanish into it on the way */
   --swap:.6s cubic-bezier(.4,0,.2,1); --flip:.16s ease .14s;
@@ -179,7 +181,7 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
    so the overlap does not show, and the two layers leave no seam where the dark glass could show through. (The other
    way round, the still status bar kept a 2px strip of the moving part: a white line while a sheet came and went.) The
    first screen is one picture, with no cut. */
-.bd{ --top:max(0px, var(--cut) - 2px * var(--ss)); top:var(--top); height:calc(100% - var(--top)); object-position:50% 100%; transition:transform .64s var(--ease) }
+.bd{ --top:max(0px, var(--cut) - 2px * var(--ss)); top:var(--top); height:calc(100% - var(--top)); object-position:50% 100%; transition:transform .5s var(--ease) }
 .s.near .bd{ will-change:transform }
 /* a screen slipped into place unseen, under the one on show */
 .s.now .bd,.s.now .st,.s.now::before{ transition:none }
@@ -323,3 +325,43 @@ html[data-moved] .hint{ opacity:0 }
 .lang-pending .outro-main,
 .lang-pending .foot{ visibility:hidden }
 .wordmark{ aspect-ratio:341.2 / 83.2 }
+
+/* ---------- the first screen ---------- */
+/* the visitor's own store, beside the language (set by /lang.js from the device) */
+.bar-end{ display:flex; align-items:center; gap:8px }
+.get{ display:none; align-items:center; height:36px; padding:0 14px; border-radius:999px; background:var(--ink); color:#FFFFFF; font:600 13.5px/1 var(--ui) }
+.get > span{ display:none; align-items:center; gap:7px }
+.get svg{ width:16px; height:16px; flex:none }
+[data-os="ios"] .get,[data-os="android"] .get,[data-os="ios"] .get-ios,[data-os="android"] .get-android{ display:inline-flex }
+[data-os="ios"] .store[data-store="Google Play"],[data-os="android"] .store[data-store="App Store"]{ display:none }
+@media (max-width:479px){
+  [data-os] .language-name{ display:none }
+  [data-os] .language-control{ width:36px; padding:0; justify-content:center }
+}
+/* every other heading in hemû orange: the rhythm is in the words, the ground stays the same */
+.captions .cap:nth-child(even) h2{ color:var(--orange-ink) }
+.floats{ display:none }
+/* On a phone the first screen is centred and large, a few listings float at its edges, and the phone waits low until the
+   tour starts (its pose in src/main.ts). */
+@media (max-width:859px) and (orientation:portrait), (max-width:599px){
+  .cap.hero{ align-items:center; text-align:center; gap:14px; padding-top:min(15svh,124px) }
+  .hero h1{ font-size:clamp(38px,11.4vw,50px); line-height:1.03; letter-spacing:-.035em }
+  [dir="rtl"] .hero h1{ font-size:clamp(36px,10.4vw,46px); line-height:1.32; letter-spacing:0 }
+  .hero .sub{ font-size:17px; max-width:29ch }
+  .hero .stores{ justify-content:center; margin-top:8px }
+  [data-os] .hero .store{ flex:0 0 auto; max-width:none; height:56px; padding:0 22px 0 18px; border-radius:14px; gap:10px }
+  [data-os] .hero .store svg{ width:26px; height:26px }
+  [data-os] .hero .store small{ font-size:11px }
+  [data-os] .hero .store b{ font-size:19px }
+  .floats{ display:block; position:absolute; inset:0; z-index:2; pointer-events:none }
+  .fl{ --s:1; position:absolute; width:88px; padding:6px 6px 8px; border-radius:16px; background:#FFFFFF;
+    box-shadow:0 10px 26px rgba(28,25,23,.16), 0 1px 3px rgba(28,25,23,.1); transform:rotate(var(--r)) scale(var(--s));
+    transition:opacity .3s ease, transform .5s var(--ease), visibility 0s }
+  .fl img{ display:block; width:100%; height:auto; aspect-ratio:1; border-radius:11px }
+  .fl b{ display:block; margin:6px 3px 0; font:700 13.5px/1 var(--ui); direction:ltr; text-align:start; color:var(--ink) }
+  .f1{ --r:-9deg; inset-inline-start:-30px; top:50px }
+  .f2{ --r:8deg; inset-inline-end:-26px; top:38px }
+  .f3{ --r:7deg; inset-inline-start:-34px; top:57% }
+  .f4{ --r:-9deg; inset-inline-end:-30px; top:62% }
+  .stage[data-step]:not([data-step="0"]) .fl{ --s:.86; opacity:0; visibility:hidden; transition:opacity .25s ease, transform .4s var(--ease), visibility 0s .4s }
+}
