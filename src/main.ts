@@ -686,9 +686,8 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) kick();
 });
 
-// index.html shows the Soranî Home screen. In another language the phone's screen stays dark until its own screen has
-// arrived, instead of showing the Soranî one and then swapping it.
-if (shots[0].querySelector('img')!.getAttribute('src') !== screenUrl(STEPS[0].name, lang)) screen.classList.add('wait');
+// The phone shows the outline of the Home screen (index.html, .screen.wait) until the visitor's own Home screen is
+// downloaded and decoded; in another language than Soranî that is not the one index.html names, so nothing is swapped.
 applyLang();
 measure();
 root.classList.add('steps');
