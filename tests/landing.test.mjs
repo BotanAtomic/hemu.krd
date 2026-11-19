@@ -62,14 +62,14 @@ test("the static first paint is the Sorani page, so index.html and the strings a
   assert(html.includes('src="/src/assets/screens/01-home-ckb.webp"'));
 });
 
-test("every language has its seven step captions, eight screens and the pieces that lift off them", async () => {
+test("every language has its seven step captions, the tour's eight screens and the pieces that lift off them", async () => {
   const { PIECES } = await import("../src/pieces.ts");
-  const screens = ["01-home", "02-sell", "03-filters", "04-offers", "05-listing", "06-alerts", "07-follow", "08-cities"];
+  const screens = ["01-home", "08-cities", "03-filters", "09-results", "05-listing", "10-chat", "11-seller", "02-sell"];
   for (const lang of Object.keys(LANGS)) {
     assert.equal(T[lang].steps.length, 7, lang);
     for (const step of T[lang].steps) assert(step.title && step.body, lang);
     assert(T[lang].alert.title && T[lang].alert.body && T[lang].alert.time, lang);
-    assert.equal(PIECES[lang].length, screens.length, lang);
+    assert.deepEqual(Object.keys(PIECES[lang]), screens, lang);
     for (const screen of screens) {
       const { size } = await stat(new URL(`../src/assets/screens/${screen}-${lang}.webp`, import.meta.url));
       assert(size > 10_000 && size < 260_000, `${screen}-${lang}.webp is ${size} bytes`);
