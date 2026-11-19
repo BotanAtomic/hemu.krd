@@ -37,4 +37,6 @@
   // index.html is drawn in Sorani; hide its text until src/main.ts has
   // translated it, so nobody sees the wrong language flash.
   if (lang !== 'ckb') root.className += ' lang-pending';
+  // the opening card (index.html .splash) shows only where scripts run; src/main.ts lifts it
+  root.className += ' splashing';
 })();
