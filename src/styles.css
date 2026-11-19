@@ -191,8 +191,12 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 .s[data-kind="sheet"]:not(.is-in) .bd,.s[data-kind="modal"]:not(.is-in) .bd{ transform:translate3d(0,102%,0) }
 .s.under .bd{ transform:translate3d(-24%,0,0) }                       /* the screen underneath gives way a little */
 [dir="rtl"] .s.under .bd{ transform:translate3d(24%,0,0) }
-.s[data-kind="sheet"]::before{ content:""; position:absolute; inset:0; background:rgba(0,0,0,.48); opacity:0; transition:opacity .4s ease; will-change:opacity }
-.s[data-kind="sheet"].is-in::before{ opacity:1 }
+.s[data-kind="sheet"]::before{ content:""; position:absolute; inset:0; background:rgba(0,0,0,.48); opacity:0; transition:opacity .3s ease; will-change:opacity }
+/* A sheet's shade, and the top of its picture (the screen under it, shaded), follow the sheet in: a phone that has to
+   draw the sheet's picture first shows it a few frames late, and a shade starting at once was a shadow standing where
+   the sheet would come. Leaving, they go at once. */
+.s[data-kind="sheet"].is-in::before{ opacity:1; transition:opacity .36s ease .12s }
+.s[data-kind="sheet"].is-in .st{ transition:opacity .3s ease .12s }
 
 /* parts of a screen that lift off the glass: each is the same picture, cut to one element */
 .pieces{ --sw:216px; position:absolute; inset:1.477% 3.1%; transform-style:preserve-3d; pointer-events:none }
