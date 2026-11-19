@@ -172,12 +172,14 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 .s{ --cutn:0; --cut:calc(var(--cutn) * 1%); position:absolute; inset:0 }
 .s.off{ visibility:hidden }   /* covered by the screens above it: not drawn at all (src/main.ts) */
 .st,.bd{ position:absolute; left:0; width:100%; max-width:none; display:block; object-fit:cover }   /* the picture, cropped: no clipping box */
-/* the status bar reaches 2px into the part below it: the same picture on both sides, so the overlap does not show, and
-   the two layers leave no seam where the dark glass could show through */
-.st{ top:0; height:calc(var(--cut) + 2px * var(--ss)); object-position:50% 0; opacity:0; transition:opacity .34s ease; will-change:opacity }
+.st{ top:0; height:var(--cut); object-position:50% 0; opacity:0; transition:opacity .34s ease; will-change:opacity }
 /* every part of a screen is a picture or a plain colour on its own layer: Safari shows those as they are, so a screen
    needs no surface of its own to be painted in */
-.bd{ top:var(--cut); height:calc(100% - var(--cut)); object-position:50% 100%; transition:transform .64s var(--ease) }
+/* The part that moves reaches 2px up into the status bar's part and is drawn over it: the same picture on both sides,
+   so the overlap does not show, and the two layers leave no seam where the dark glass could show through. (The other
+   way round, the still status bar kept a 2px strip of the moving part: a white line while a sheet came and went.) The
+   first screen is one picture, with no cut. */
+.bd{ --top:max(0px, var(--cut) - 2px * var(--ss)); top:var(--top); height:calc(100% - var(--top)); object-position:50% 100%; transition:transform .64s var(--ease) }
 .s.near .bd{ will-change:transform }
 /* a screen slipped into place unseen, under the one on show */
 .s.now .bd,.s.now .st,.s.now::before{ transition:none }
