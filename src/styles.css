@@ -183,8 +183,14 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
 .s.near .bd{ will-change:transform }
 /* a screen slipped into place unseen, under the one on show */
 .s.now .bd,.s.now .st,.s.now::before{ transition:none }
-/* a screen pushed while a sheet closes starts a moment later */
+/* a screen pushed while a sheet closes starts a moment later; a sheet opened as another closes waits until that one
+   is nearly down */
 .s.late .bd{ transition-delay:.14s }
+.s.late.swap .bd{ transition-delay:.22s }
+/* the screen leaving stays on top until it is gone (src/main.ts) */
+.s.out{ z-index:1 }
+/* a tab is there or not: it never moves */
+.s[data-kind="tab"]:not(.is-in){ visibility:hidden }
 .s.is-in .st{ opacity:1 }
 .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(101%,0,0) }
 [dir="rtl"] .s[data-kind="push"]:not(.is-in) .bd{ transform:translate3d(-101%,0,0) }
@@ -197,6 +203,9 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
    the sheet would come. Leaving, they go at once. */
 .s[data-kind="sheet"].is-in::before{ opacity:1; transition:opacity .36s ease .12s }
 .s[data-kind="sheet"].is-in .st{ transition:opacity .3s ease .12s }
+/* One sheet giving way to another over the same screen: both shades, and the tops of both pictures (that screen,
+   shaded), change at once, so the screen under them stays as shaded as it was. */
+.s[data-kind].swap::before,.s[data-kind].swap .st{ transition:none }
 
 /* parts of a screen that lift off the glass: each is the same picture, cut to one element */
 .pieces{ --sw:216px; position:absolute; inset:1.477% 3.1%; transform-style:preserve-3d; pointer-events:none }
@@ -214,7 +223,7 @@ h2{ font-size:clamp(22px,6.5vw,30px) }
   column-gap:calc(var(--pw) * .034); padding:calc(var(--pw) * .034) calc(var(--pw) * .042); border-radius:calc(var(--pw) * .085);
   background:#FFFFFF; color:#1A1A1A; box-shadow:0 calc(var(--pw) * .09) calc(var(--pw) * .16) calc(var(--pw) * -.057) rgba(0,0,0,.55), 0 calc(var(--pw) * .008) calc(var(--pw) * .024) rgba(0,0,0,.14);
   opacity:0; transform:translate3d(0,calc(var(--pw) * -.16),calc(var(--pw) * .1)) scale(.9); transition:opacity .2s ease, transform .4s var(--ease); pointer-events:none; text-align:start }
-.stage[data-screen="06-alerts"] .notif{ opacity:1; transform:translate3d(0,0,calc(var(--pw) * .3)); transition:opacity .3s ease .55s, transform .8s cubic-bezier(.2,1.25,.35,1) .55s }
+.stage[data-screen="09-results"] .notif{ opacity:1; transform:translate3d(0,0,calc(var(--pw) * .3)); transition:opacity .3s ease .55s, transform .8s cubic-bezier(.2,1.25,.35,1) .55s }
 .notif svg{ width:calc(var(--pw) * .135); height:calc(var(--pw) * .135); border-radius:24%; display:block }
 .notif b{ display:block; font-size:calc(var(--pw) * .052); font-weight:700; line-height:1.25; letter-spacing:-.01em }
 .notif span{ display:block; font-size:calc(var(--pw) * .047); line-height:1.3; color:#3F3B37 }
@@ -290,7 +299,7 @@ html[data-moved] .hint{ opacity:0 }
 
 @media (prefers-reduced-motion:reduce){
   .pieces{ display:none }
-  .st,.bd,.s::before,.cap > *,.cap.is-active > *,.notif,.stage[data-screen="06-alerts"] .notif{ transition:none !important }
+  .st,.bd,.s::before,.cap > *,.cap.is-active > *,.notif,.stage[data-screen="09-results"] .notif{ transition:none !important }
   .hint{ animation:none !important }
   :root,.wash,.wordmark,.language-control,.aura,.ember,.phone-area::before,.floor,.screen{ transition:none !important }
 }

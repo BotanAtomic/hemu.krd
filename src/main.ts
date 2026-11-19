@@ -12,12 +12,13 @@ const screenUrls = import.meta.glob<string>('./assets/screens/*.webp', {
 });
 const screenUrl = (name: string, lang: Lang) => screenUrls[`./assets/screens/${name}-${lang}.webp`];
 
-type Kind = 'modal' | 'sheet' | 'push';
+// How a screen arrives: pushed from the side, rising as a sheet or as the camera, or at once, as a tab does.
+type Kind = 'modal' | 'sheet' | 'push' | 'tab';
 type Tone = 'canvas' | 'orange' | 'tint' | 'night';
 interface Step {
-  /** the app screen: src/assets/screens/<name>-<language>.webp */
+  /** the app screen: src/assets/screens/<name>-<language>.webp, with its lifting parts in src/pieces.ts */
   name: string;
-  /** its place in the generated lists (captions in src/translations.ts, lifting parts in src/pieces.ts) */
+  /** its caption: the store headline it shares, T[lang].steps[at - 1] in src/translations.ts (0: the page's headline) */
   at: number;
   tone: Tone;
   kind?: Kind;
@@ -26,21 +27,20 @@ interface Step {
   /** Where the part that moves begins, in % of the screen height: under the status bar, or the top of the sheet. A
    *  screen that covers everything (the camera) moves whole. */
   cut?: number;
-  /** false: nothing lifts off this screen */
-  lift?: boolean;
 }
-// The tour follows the app's own navigation, so that every screen arrives the way it would on a phone: the city sheet
-// rises over Home (its picture is drawn over Home), the Audi from Home's feed opens, then its seller's profile, then a
-// chat with him, then saved searches, the filter sheet over them, and the camera, which covers everything.
+// The tour is one visit to the app, so that every screen arrives the way it would on a phone: the city sheet rises
+// over Home (its picture is drawn over Home), then the filter sheet; applying it opens the search results, with the
+// alert for that saved search; the grey Audi there opens, then the chat with its seller, then his profile, and the
+// camera covers everything.
 const STEPS: Step[] = [
   { name: '01-home', at: 0, tone: 'canvas' },
   { name: '08-cities', at: 7, kind: 'sheet', over: 0, tone: 'tint', cut: 7.7 },
-  { name: '05-listing', at: 4, kind: 'push', over: 0, tone: 'canvas', cut: 5.9 },
-  { name: '07-follow', at: 6, kind: 'push', over: 2, tone: 'canvas', cut: 5.9 },
-  { name: '04-offers', at: 3, kind: 'push', over: 3, tone: 'tint', cut: 5.9 },
-  { name: '06-alerts', at: 5, kind: 'push', over: 4, tone: 'night', cut: 5.9 },
-  { name: '03-filters', at: 2, kind: 'sheet', over: 5, tone: 'canvas', cut: 7.5 },
-  { name: '02-sell', at: 1, kind: 'modal', over: 6, tone: 'orange', lift: false },
+  { name: '03-filters', at: 2, kind: 'sheet', over: 0, tone: 'canvas', cut: 7.5 },
+  { name: '09-results', at: 5, kind: 'tab', tone: 'night', cut: 5.9 },
+  { name: '05-listing', at: 4, kind: 'push', over: 3, tone: 'canvas', cut: 5.9 },
+  { name: '10-chat', at: 3, kind: 'push', over: 4, tone: 'tint', cut: 5.9 },
+  { name: '11-seller', at: 6, kind: 'push', over: 5, tone: 'canvas', cut: 5.9 },
+  { name: '02-sell', at: 1, kind: 'modal', over: 6, tone: 'orange' },
 ];
 // The English city sheet starts lower than the others.
 const cutFor = (step: Step, lang: Lang) => (step.name === '08-cities' && lang === 'en' ? 11.7 : step.cut);
@@ -268,7 +268,7 @@ function loadScreens() {
 function buildPieces() {
   piecesEl.textContent = '';
   groups = STEPS.map((at, step) => {
-    const list = at.lift === false ? [] : PIECES[lang][at.at];
+    const list = PIECES[lang][at.name] ?? [];
     const el = document.createElement('div');
     el.className = 'grp';
     const url = screenUrl(at.name, lang);
@@ -451,18 +451,27 @@ function show(i: number, now: number) {
   });
   // The phone shows this step's stack of screens. Of those that change, the top one arriving and the top one leaving
   // move, as the app would move them (a sheet closes as the next screen opens); any other comes or goes at once, unseen
-  // under them. On the first frame nothing moves.
+  // under them, and so does a tab. The one leaving stays on top until it is gone: the sheet that closes as the search
+  // results open goes down over them. On the first frame nothing moves.
   const stack = stacks[i];
   const changing = shots.map((shot, k) => stack.includes(k) !== shot.classList.contains('is-in'));
   const arriving = from < 0 ? -1 : Math.max(-1, ...stack.filter((k) => changing[k]));
   const leaving = from < 0 ? -1 : Math.max(-1, ...shots.map((_, k) => (changing[k] && !stack.includes(k) ? k : -1)));
   const beneath = STEPS[i].over ?? -1;
-  // a sheet or the camera closing as a screen is pushed: the push waits a moment, so it reads as one after the other
-  const late = arriving > -1 && leaving > -1 && STEPS[arriving].kind === 'push' && STEPS[leaving].kind !== 'push';
+  // a sheet or the camera closing as a screen is pushed or another sheet opens: that one waits a moment, so it reads
+  // as one after the other
+  const closing = leaving > -1 && (STEPS[leaving].kind === 'sheet' || STEPS[leaving].kind === 'modal');
+  const late = closing && arriving > -1 && (STEPS[arriving].kind === 'push' || STEPS[arriving].kind === 'sheet');
+  // one sheet giving way to another over the same screen: the shade over that screen stays as it is
+  const swap = late && STEPS[arriving].kind === 'sheet' && STEPS[leaving].kind === 'sheet';
   keep = [...new Set([i, beneath, from, i - 1, STEPS[i - 1]?.over ?? -1, i + 1, STEPS[i + 1]?.over ?? -1])].filter((k) => k > -1 && k < N);
   shots.forEach((shot, k) => {
-    shot.classList.toggle('now', changing[k] && k !== arriving && k !== leaving);
+    // Home and a tab never move: they are there or not
+    const moves = !!STEPS[k].kind && STEPS[k].kind !== 'tab';
+    shot.classList.toggle('now', changing[k] && (!moves || (k !== arriving && k !== leaving)));
     shot.classList.toggle('late', late && k === arriving);
+    shot.classList.toggle('out', moves && k === leaving);
+    shot.classList.toggle('swap', swap && (k === arriving || k === leaving));
     shot.classList.toggle('is-in', stack.includes(k));
     // the screen right under a pushed one gives way a little
     shot.classList.toggle('under', k === beneath && STEPS[i].kind === 'push');
