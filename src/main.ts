@@ -215,6 +215,9 @@ interface Group {
 }
 let groups: Group[] = [];
 let shown = -1; // the step on show: its screen, caption and ground
+let keep: number[] = []; // the screens that stay drawn (see show())
+let ended = false;
+let tidy = 0;
 let side = 1;
 let lang: Lang = pageLang();
 
@@ -361,7 +364,7 @@ function setTone(next: Tone, fade: boolean) {
   }
   tone = next;
   stage.dataset.tone = next;
-  backdrop.style.backgroundColor = root.style.backgroundColor = `rgb(${GROUND[next]})`;
+  backdrop.style.backgroundColor = `rgb(${GROUND[next]})`;
   if (fade) {
     void getComputedStyle(wash).opacity; // the fade starts from here
     wash.style.transition = '';
@@ -427,6 +430,7 @@ function show(i: number, now: number) {
   caps.forEach((cap, k) => {
     cap.classList.toggle('is-active', k === i);
     cap.classList.toggle('is-before', k < i);
+    cap.classList.toggle('near', Math.abs(k - i) < 2);
     if (k === i) cap.removeAttribute('aria-hidden');
     else cap.setAttribute('aria-hidden', 'true');
   });
@@ -445,6 +449,12 @@ function show(i: number, now: number) {
   });
   // the screen right under a pushed one gives way a little
   shots.forEach((shot, k) => shot.classList.toggle('under', k === beneath && STEPS[i].kind === 'push'));
+  // Screens covered by the one on show are not drawn at all once it has arrived. This one stays, with the one under it
+  // (seen beside a pushed screen or through a sheet's shade), the one just left, and the next one, ready to come in.
+  keep = [i, beneath, from, i + 1];
+  for (const k of keep) shots[k]?.classList.remove('off');
+  clearTimeout(tidy);
+  tidy = window.setTimeout(() => shots.forEach((shot, k) => shot.classList.toggle('off', !keep.includes(k))), 800);
   stage.dataset.step = String(i);
 }
 function poseAt(p: number): Pose {
@@ -481,6 +491,12 @@ function frame(now: number) {
   const waiting = step !== shown;
   // when the closing card is nearly up, what is left of the stage joins it
   setTone(c > 0.9 ? 'orange' : STEPS[shown].tone, !reduced && !first);
+  // past the end of the page, pulling shows the page's own background: orange under the closing card
+  const end = c > 0.5;
+  if (end !== ended) {
+    ended = end;
+    root.style.backgroundColor = end ? `rgb(${GROUND.orange})` : '';
+  }
   const scrolled = window.scrollY > 24;
   if (scrolled !== moved) {
     moved = scrolled;
@@ -488,15 +504,9 @@ function frame(now: number) {
     else delete root.dataset.moved;
   }
 
-  // pose: a spring, slightly under-damped, so the phone arrives at each pose with a little life.
-  // At the very top the phone floats a little.
-  const idle = !reduced && p < 0.02 && !document.hidden;
+  // pose: a spring, slightly under-damped, so the phone arrives at each pose with a little life. Once arrived, nothing
+  // moves and nothing is drawn again until the next scroll.
   const tgt: Pose = reduced ? [...STILL] : poseAt(p);
-  if (idle && !intro) {
-    tgt[0] += Math.sin(now / 1900) * 1.5;
-    tgt[1] += Math.sin(now / 2700) * 2.6;
-    tgt[3] += Math.sin(now / 2300) * 0.7;
-  }
   tgt[1] *= side;
   tgt[2] *= side;
   if (!reduced) {
@@ -509,8 +519,8 @@ function frame(now: number) {
   const grow = room[shown] || 0;
   tgt[4] *= 1 + (grow * SS) / ph;
   tgt[3] -= ((grow * SS) / 2 / ph) * 100;
-  const stiff = intro ? 30 : 150;
-  const damp = intro ? 10.5 : 22;
+  const stiff = intro ? 45 : 260;
+  const damp = intro ? 13 : 30;
   const h = dt / 2000;
   let d = 0;
   for (let i = 0; i < 5; i++) {
@@ -556,7 +566,8 @@ function frame(now: number) {
   }
   rimA.style.opacity = clamp(0.5 - cur[1] / 44, 0, 1).toFixed(2);
   rimB.style.opacity = clamp(0.22 + cur[1] / 44, 0, 1).toFixed(2);
-  sheen.style.transform = `translate3d(${(-cur[1] * 1.7 - cur[2]).toFixed(2)}%,${(cur[0] * 0.7).toFixed(2)}%,0)`;
+  // the band moves as a band three screens wide did before, in units of its own size, and keeps its 14° tilt
+  sheen.style.transform = `translate3d(${((-cur[1] * 1.7 - cur[2]) * 2.2377).toFixed(2)}%,${(cur[0] * 0.65625).toFixed(2)}%,0) rotate(14deg)`;
   veil.style.opacity = (c * 0.34).toFixed(3);
   const radius = Math.round(28 * (1 - smooth(0.8, 1, c)));
   if (radius !== sheetRadius) {
@@ -591,7 +602,7 @@ function frame(now: number) {
     return;
   }
   const settling = (armed && now - group.armedAt < 550) || (!armed && group.readyAt >= 0 && now - group.readyAt < 200);
-  if (idle || intro || d > 0.03 || since < 650 || settling || waiting) kick();
+  if (intro || d > 0.03 || since < 650 || settling || waiting) kick();
   else last = 0;
 }
 function kick() {
