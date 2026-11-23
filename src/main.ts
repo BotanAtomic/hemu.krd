@@ -323,6 +323,7 @@ function applyLang() {
     headline: t.headline,
     subheadline: t.subheadline,
     comingSoon: t.comingSoon,
+    availableNow: t.availableNow,
     downloadHint: t.downloadHint,
     languageLabel: t.languageLabel,
     contact: t.contact,
@@ -340,7 +341,7 @@ function applyLang() {
   $('#languageName').textContent = meta.name;
   select.setAttribute('aria-label', t.languageLabel);
   for (const store of document.querySelectorAll<HTMLElement>('[data-store]')) {
-    store.setAttribute('aria-label', `${store.dataset.store} — ${t.comingSoon}`);
+    store.setAttribute('aria-label', `${store.dataset.store} — ${store.dataset.store === 'Google Play' ? t.availableNow : t.comingSoon}`);
   }
   shots.forEach((shot, i) => {
     const cut = cutFor(STEPS[i], lang);

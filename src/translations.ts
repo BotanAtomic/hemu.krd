@@ -5,7 +5,7 @@
 // (onboarding.language) and each LANGS name (onboarding.langX in that
 // language's own bundle). The step titles are the store-screenshot headlines and
 // the step bodies and the alert are lines of the store description, word for word.
-// comingSoon, downloadHint and contact are site-only.
+// comingSoon, availableNow, downloadHint and contact are site-only.
 // The Sorani strings of the first screen are also written into index.html (the
 // static first paint); tests/landing.test.mjs keeps the two in sync.
 
@@ -32,6 +32,7 @@ export interface Strings {
   headline: string;
   subheadline: string;
   comingSoon: string;
+  availableNow: string;
   downloadHint: string;
   languageLabel: string;
   contact: string;
@@ -46,7 +47,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'Everything, near you',
     subheadline: 'Buy and sell across Kurdistan — from Hewlêr to Amed.',
     comingSoon: 'Coming soon',
-    downloadHint: 'The hemû app is on its way to iPhone and Android.',
+    availableNow: 'Available now',
+    downloadHint: 'hemû is on Android now. Coming soon to iPhone.',
     languageLabel: 'Language',
     contact: 'Contact',
     steps: [
@@ -64,7 +66,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'هەموو شتێک، لە نزیکەوە',
     subheadline: 'بکڕە و بفرۆشە لە سەرانسەری کوردستان — لە هەولێر تا ئامەد.',
     comingSoon: 'بەم زووانە',
-    downloadHint: 'ئەپی hemû بەم زووانە بۆ iPhone و Android دێت.',
+    availableNow: 'ئێستا بەردەستە',
+    downloadHint: 'ئەپی hemû ئێستا بۆ Android بەردەستە. بەم زووانە بۆ iPhone دێت.',
     languageLabel: 'زمان',
     contact: 'پەیوەندی',
     steps: [
@@ -82,7 +85,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'Her tişt, li nêzîkî te',
     subheadline: 'Li seranserê Kurdistanê bikire û bifiroşe — ji Hewlêrê heta Amedê.',
     comingSoon: 'Di demeke nêz de',
-    downloadHint: 'Sepana hemû di demeke nêz de ji bo iPhone û Androidê tê.',
+    availableNow: 'Niha berdest e',
+    downloadHint: 'Sepana hemû niha ji bo Android berdest e. Di demeke nêz de ji bo iPhone tê.',
     languageLabel: 'Ziman',
     contact: 'Têkilî',
     steps: [
@@ -100,7 +104,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'كل شيء، بالقرب منك',
     subheadline: 'بع واشترِ في كل كردستان — من Hewlêr إلى Amed.',
     comingSoon: 'قريبًا',
-    downloadHint: 'تطبيق hemû قادم قريبًا إلى iPhone وAndroid.',
+    availableNow: 'متوفر الآن',
+    downloadHint: 'تطبيق hemû متوفر الآن على Android. قريبًا على iPhone.',
     languageLabel: 'اللغة',
     contact: 'تواصل معنا',
     steps: [
@@ -118,7 +123,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'Her şey, yanı başında',
     subheadline: "Kürdistan'ın her yerinde al, sat — Hewlêr'den Amed'e.",
     comingSoon: 'Çok yakında',
-    downloadHint: "hemû uygulaması çok yakında iPhone ve Android'de.",
+    availableNow: 'Şimdi yayında',
+    downloadHint: "hemû uygulaması artık Android'de. Çok yakında iPhone'da.",
     languageLabel: 'Dil',
     contact: 'İletişim',
     steps: [
@@ -136,7 +142,8 @@ export const T: Record<Lang, Strings> = {
     headline: 'همه‌چیز، نزدیک تو',
     subheadline: 'خرید و فروش در سراسر کردستان — از Hewlêr تا Amed.',
     comingSoon: 'به‌زودی',
-    downloadHint: 'اپلیکیشن hemû به‌زودی برای iPhone و Android عرضه می‌شود.',
+    availableNow: 'اکنون در دسترس',
+    downloadHint: 'اپلیکیشن hemû اکنون برای Android در دسترس است. به‌زودی برای iPhone.',
     languageLabel: 'زبان',
     contact: 'تماس',
     steps: [
