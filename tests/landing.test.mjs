@@ -54,6 +54,7 @@ test("the static first paint is the Sorani page, so index.html and the strings a
   assert.equal(text("subheadline"), t.subheadline);
   assert.equal(text("comingSoon"), t.comingSoon);
   assert.equal(text("downloadHint"), t.downloadHint);
+  assert.equal(text("availableNow"), t.availableNow);
   assert.equal(text("languageLabel"), t.languageLabel);
   assert.equal(text("contact"), t.contact);
   assert(html.includes(`<title>hemû — ${t.headline}</title>`));
@@ -135,4 +136,29 @@ test("only content-hashed assets are immutable; HTML and the CAPTCHA page stay s
   assert.equal(rules.at(-1), immutable[0]);
   assert.equal(cache(rules.find((rule) => rule.source === "**")), "public, max-age=300");
   assert.equal(cache(rules.find((rule) => rule.source === "/auth/captcha{,/**}")), "no-store");
+});
+
+const PLAY = "https://play.google.com/store/apps/details?id=krd.hemu.app";
+
+test("Google Play is a real link in both store blocks and the Android pill; App Store stays a non-link", async () => {
+  const html = await read("index.html");
+  const blocks = html.match(/<div class="stores">[\s\S]*?<\/a>/gu);
+  assert.equal(blocks.length, 2);
+  for (const block of blocks) {
+    assert(block.includes(`<a class="store" data-store="Google Play" href="${PLAY}" rel="noopener" aria-label="Google Play — ${T.ckb.availableNow}">`));
+    assert(block.includes(`<div class="store" data-store="App Store" aria-label="App Store — ${T.ckb.comingSoon}">`));
+  }
+  assert.equal(html.match(/href="https:\/\/play\.google\.com[^"]*"/gu).length, 3);
+  assert(html.includes(`<a class="get-android" data-store="Google Play" href="${PLAY}"`));
+  assert(html.includes('<span class="get-ios" aria-hidden="true">'));
+  assert(!/<a [^>]*data-store="App Store"/u.test(html));
+  assert(!/<span class="get"[^>]*aria-hidden/u.test(html));
+});
+
+test("every language says the Play badge is available now", () => {
+  for (const lang of Object.keys(LANGS)) {
+    assert(T[lang].availableNow, lang);
+    assert.notEqual(T[lang].availableNow, T[lang].comingSoon, lang);
+    assert(/Android/u.test(T[lang].downloadHint), lang);
+  }
 });
