@@ -52,7 +52,6 @@ test("the static first paint is the Sorani page, so index.html and the strings a
     decode(html.match(new RegExp(`data-t="${key}">([^<]*)<`, "u"))?.[1] ?? "");
   assert.equal(text("headline"), t.headline);
   assert.equal(text("subheadline"), t.subheadline);
-  assert.equal(text("comingSoon"), t.comingSoon);
   assert.equal(text("downloadHint"), t.downloadHint);
   assert.equal(text("availableNow"), t.availableNow);
   assert.equal(text("languageLabel"), t.languageLabel);
@@ -139,26 +138,27 @@ test("only content-hashed assets are immutable; HTML and the CAPTCHA page stay s
 });
 
 const PLAY = "https://play.google.com/store/apps/details?id=krd.hemu.app";
+const APPLE = "https://apps.apple.com/app/id6805621903";
 
-test("Google Play is a real link in both store blocks and the Android pill; App Store stays a non-link", async () => {
+test("both stores are real links in both store blocks and in the header pill", async () => {
   const html = await read("index.html");
-  const blocks = html.match(/<div class="stores">[\s\S]*?<\/a>/gu);
+  const blocks = html.match(/<div class="stores">[\s\S]*?<\/a>[\s\S]*?<\/a>/gu);
   assert.equal(blocks.length, 2);
   for (const block of blocks) {
+    assert(block.includes(`<a class="store" data-store="App Store" href="${APPLE}" rel="noopener" aria-label="App Store — ${T.ckb.availableNow}">`));
     assert(block.includes(`<a class="store" data-store="Google Play" href="${PLAY}" rel="noopener" aria-label="Google Play — ${T.ckb.availableNow}">`));
-    assert(block.includes(`<div class="store" data-store="App Store" aria-label="App Store — ${T.ckb.comingSoon}">`));
   }
   assert.equal(html.match(/href="https:\/\/play\.google\.com[^"]*"/gu).length, 3);
+  assert.equal(html.match(/href="https:\/\/apps\.apple\.com[^"]*"/gu).length, 3);
   assert(html.includes(`<a class="get-android" data-store="Google Play" href="${PLAY}"`));
-  assert(html.includes('<span class="get-ios" aria-hidden="true">'));
-  assert(!/<a [^>]*data-store="App Store"/u.test(html));
+  assert(html.includes(`<a class="get-ios" data-store="App Store" href="${APPLE}"`));
+  assert(!/<div class="store"/u.test(html));
   assert(!/<span class="get"[^>]*aria-hidden/u.test(html));
 });
 
-test("every language says the Play badge is available now", () => {
+test("every language says the app is available now on iPhone and Android", () => {
   for (const lang of Object.keys(LANGS)) {
     assert(T[lang].availableNow, lang);
-    assert.notEqual(T[lang].availableNow, T[lang].comingSoon, lang);
-    assert(/Android/u.test(T[lang].downloadHint), lang);
+    assert(/iPhone/u.test(T[lang].downloadHint) && /Android/u.test(T[lang].downloadHint), lang);
   }
 });
