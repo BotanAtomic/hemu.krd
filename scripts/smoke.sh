@@ -28,7 +28,7 @@ for route in /privacy /terms /data-deletion /support /app /auth/captcha /auth/ca
   ! grep -Fq 'class="tour"' "$tmp/body" || exit 1
 done
 echo 'PASS site pages: own HTML'
-request /download 301
+request /download 301 text/plain
 grep -Fiqx 'location: /app' < <(tr -d '\r' < "$tmp/headers")
 echo 'PASS /download: permanent redirect to /app'
 request /auth/captcha
