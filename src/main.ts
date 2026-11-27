@@ -30,7 +30,7 @@ interface Step {
 }
 // The tour is one visit to the app, so that every screen arrives the way it would on a phone: the city sheet rises
 // over Home (its picture is drawn over Home), then the filter sheet; applying it opens the search results, with the
-// alert for that saved search; the grey Audi there opens, then the chat with its seller, then his profile, and the
+// alert for that saved search; the white Mercedes there opens, then the chat with its seller, then his profile, and the
 // camera covers everything.
 const STEPS: Step[] = [
   { name: '01-home', at: 0, tone: 'canvas' },
