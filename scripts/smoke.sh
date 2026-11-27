@@ -23,11 +23,14 @@ for route in /listing/x /u/x /signup /signup/verify /seller.one /seller_one /__h
   grep -Fq 'class="tour"' "$tmp/body"
 done
 echo 'PASS share links: landing shell'
-for route in /privacy /terms /data-deletion /support /auth/captcha /auth/callback; do
+for route in /privacy /terms /data-deletion /support /app /auth/captcha /auth/callback; do
   request "$route"
   ! grep -Fq 'class="tour"' "$tmp/body" || exit 1
 done
 echo 'PASS site pages: own HTML'
+request /download 301
+grep -Fiqx 'location: /app' < <(tr -d '\r' < "$tmp/headers")
+echo 'PASS /download: permanent redirect to /app'
 request /auth/captcha
 robots='x-robots-tag: noindex, nofollow'
 if [[ $origin =~ ^https://hemu-fd2f4--[a-z0-9-]+\.web\.app$ ]]; then

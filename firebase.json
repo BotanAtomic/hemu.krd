@@ -102,7 +102,14 @@
         ]
       }
     ],
+    "redirects": [
+      { "source": "/download", "destination": "/app", "type": 301 }
+    ],
     "rewrites": [
+      {
+        "source": "/app",
+        "destination": "/app/index.html"
+      },
       {
         "source": "/auth/captcha",
         "destination": "/auth/captcha/index.html"
