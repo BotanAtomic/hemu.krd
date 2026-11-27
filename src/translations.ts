@@ -58,7 +58,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'Follow sellers you like', body: 'Follow the sellers you like and see their new listings on Home.' },
       { title: 'Your city, or all of Kurdistan', body: 'Choose your city, several locations, or all of Kurdistan.' },
     ],
-    alert: { title: 'Audi under $30,000', body: '3 new listings in Hewlêr and Silêmanî', time: 'now' },
+    alert: { title: 'Mercedes under $30,000', body: '3 new listings in Hewlêr and Silêmanî', time: 'now' },
   },
   ckb: {
     headline: 'هەموو شتێک، لە نزیکەوە',
@@ -76,7 +76,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'شوێن فرۆشیارە دڵخوازەکانت بکەوە', body: 'شوێنی ئەو فرۆشیارانە بکەوە کە حەزت لێیانە و ڕیکلامە نوێیەکانیان لە پەڕەی سەرەکی ببینە.' },
       { title: 'شارەکەت، یان هەموو کوردستان', body: 'شارەکەت، چەند شوێنێک یان هەموو کوردستان هەڵبژێرە.' },
     ],
-    alert: { title: 'ئاودی کەمتر لە $30,000', body: '٣ ڕیکلامی نوێ لە هەولێر و سلێمانی', time: 'ئێستا' },
+    alert: { title: 'مێرسیدس کەمتر لە $30,000', body: '٣ ڕیکلامی نوێ لە هەولێر و سلێمانی', time: 'ئێستا' },
   },
   ku: {
     headline: 'Her tişt, li nêzîkî te',
@@ -94,7 +94,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'Firoşkarên ku hez dikî bişopîne', body: 'Firoşkarên ku hez dikî bişopîne û reklamên wan ên nû li Destpêkê bibîne.' },
       { title: 'Bajarê te, an jî hemû Kurdistan', body: 'Bajarê xwe, çend cihan an hemû Kurdistanê hilbijêre.' },
     ],
-    alert: { title: 'Audi di bin $30,000 de', body: '3 reklamên nû li Hewlêr û Silêmaniyê', time: 'niha' },
+    alert: { title: 'Mercedes di bin $30,000 de', body: '3 reklamên nû li Hewlêr û Silêmaniyê', time: 'niha' },
   },
   ar: {
     headline: 'كل شيء، بالقرب منك',
@@ -112,7 +112,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'تابع البائعين الذين تحبهم', body: 'تابع البائعين الذين تحبهم وشاهد إعلاناتهم الجديدة في الرئيسية.' },
       { title: 'مدينتك، أو كل كردستان', body: 'اختر مدينتك أو عدة مواقع أو كل كردستان.' },
     ],
-    alert: { title: 'أودي بأقل من $30,000', body: '٣ إعلانات جديدة في أربيل والسليمانية', time: 'الآن' },
+    alert: { title: 'مرسيدس بأقل من $30,000', body: '٣ إعلانات جديدة في أربيل والسليمانية', time: 'الآن' },
   },
   tr: {
     headline: 'Her şey, yanı başında',
@@ -130,7 +130,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'Satıcıları takip et', body: 'Beğendiğin satıcıları takip et, yeni ilanlarını ana sayfada gör.' },
       { title: 'Şehrin ya da tüm Kürdistan', body: "Şehrini, birkaç konumu ya da tüm Kürdistan'ı seç." },
     ],
-    alert: { title: '$30,000 altı Audi', body: 'Erbil ve Süleymaniye’de 3 yeni ilan', time: 'şimdi' },
+    alert: { title: '$30,000 altı Mercedes', body: 'Erbil ve Süleymaniye’de 3 yeni ilan', time: 'şimdi' },
   },
   fa: {
     headline: 'همه‌چیز، نزدیک تو',
@@ -148,7 +148,7 @@ export const T: Record<Lang, Strings> = {
       { title: 'فروشنده‌های مورد علاقه‌ات را دنبال کن', body: 'فروشنده‌های مورد علاقه‌ات را دنبال کن و آگهی‌های تازه‌شان را در صفحهٔ خانه ببین.' },
       { title: 'شهر خودت، یا همهٔ کردستان', body: 'شهر خودت، چند موقعیت یا همهٔ کردستان را انتخاب کن.' },
     ],
-    alert: { title: 'آئودی زیر $30,000', body: '۳ آگهی تازه در اربیل و سلیمانیه', time: 'اکنون' },
+    alert: { title: 'مرسدس زیر $30,000', body: '۳ آگهی تازه در اربیل و سلیمانیه', time: 'اکنون' },
   },
 };
 
